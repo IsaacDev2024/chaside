@@ -67,5 +67,22 @@ function xmldb_block_chaside_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2025121101, 'chaside');
     }
 
+    // Remove courseid field as functionality is now cross-course
+    if ($oldversion < 2025121700) {
+        $table = new xmldb_table('block_chaside_responses');
+        
+        // Drop foreign key constraint first if it exists
+        $key = new xmldb_key('courseid', XMLDB_KEY_FOREIGN, ['courseid'], 'course', ['id']);
+        $dbman->drop_key($table, $key);
+        
+        // Drop the courseid field
+        $field = new xmldb_field('courseid');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+        
+        upgrade_block_savepoint(true, 2025121700, 'chaside');
+    }
+
     return true;
 }

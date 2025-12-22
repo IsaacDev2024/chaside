@@ -30,9 +30,14 @@ if ($confirm && confirm_sesskey()) {
 // Show confirmation page.
 echo $OUTPUT->header();
 
+// We get user data to show who it is
 $user = $DB->get_record('user', array('id' => $response->userid), 
     'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename');
-$message = get_string('deleteresponseconfirm', 'block_chaside', fullname($user));
+
+// Fallback if user record is missing
+$username = $user ? fullname($user) : get_string('deleteduser', 'block_chaside'); 
+
+$message = get_string('deleteresponseconfirm', 'block_chaside', $username);
 $confirmurl = new moodle_url($PAGE->url, array('confirm' => 1));
 $cancelurl = $adminviewurl;
 

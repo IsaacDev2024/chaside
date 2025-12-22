@@ -2,12 +2,13 @@
 // This file is part of Moodle - http://moodle.org/
 
 require_once('../../config.php');
-require_once('block_chaside.php');
+
+define('BLOCK_CHASIDE_QUESTIONS_PER_PAGE', 10);
+define('BLOCK_CHASIDE_TOTAL_QUESTIONS', 98);
 
 $courseid = required_param('courseid', PARAM_INT);
-$blockid = required_param('blockid', PARAM_INT);
 $page = optional_param('page', 1, PARAM_INT);
-$scroll_to_question = optional_param('scroll', '', PARAM_RAW); // Can be question number, 'finish', or 'highlight_first'
+$scroll_to_finish = optional_param('scroll_to_finish', 0, PARAM_INT);
 
 $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $context = context_course::instance($courseid);
@@ -15,266 +16,33 @@ $context = context_course::instance($courseid);
 require_login($course);
 require_capability('block/chaside:take_test', $context);
 
-// Redirect teachers/admins to management page
+// Redirect teachers/admins to admin page
 if (has_capability('block/chaside:manage_responses', $context)) {
-    $manage_url = new moodle_url('/blocks/chaside/manage.php', array('courseid' => $courseid, 'blockid' => $blockid));
+    $manage_url = new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid));
     redirect($manage_url, get_string('teachers_redirect_message', 'block_chaside'));
 }
 
-// If scroll parameter is a question number, calculate the correct page
-$questions_per_page = 10;
-if ($scroll_to_question && is_numeric($scroll_to_question)) {
-    $question_num = (int)$scroll_to_question;
-    $calculated_page = ceil($question_num / $questions_per_page);
-    if ($calculated_page != $page) {
-        // Redirect to correct page with scroll parameter
-        redirect(new moodle_url('/blocks/chaside/view.php', array(
-            'courseid' => $courseid,
-            'blockid' => $blockid,
-            'page' => $calculated_page,
-            'scroll' => $scroll_to_question
-        )));
-    }
-}
+// NOTE: We intentionally do not accept a GET "scroll" parameter.
+// Scrolling/highlighting is controlled internally via $SESSION.
 
-$PAGE->set_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'blockid' => $blockid, 'page' => $page));
+$PAGE->set_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page));
 $PAGE->set_title(get_string('test_title', 'block_chaside'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
+$PAGE->requires->css('/blocks/chaside/styles.css');
 
 // Inicializar el facade
-$facade = new ChasideFacade();
+$facade = new \block_chaside\facade();
 
 // Verificar si ya existe una respuesta del usuario (en cualquier curso)
 $existing_response = $DB->get_record('block_chaside_responses', array(
     'userid' => $USER->id
 ));
 
-// Procesar envío del formulario
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_sesskey();
-    
-    // Si el test ya está completado, NO permitir modificaciones
-    if ($existing_response && $existing_response->is_completed) {
-        $results_url = new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid, 'blockid' => $blockid));
-        redirect($results_url, get_string('test_already_completed', 'block_chaside'), null, \core\output\notification::NOTIFY_WARNING);
-    }
-    
-    $action = optional_param('action', 'save', PARAM_ALPHA);
-    
-    // Preparar datos base
-    $data = array(
-        'userid' => $USER->id,
-        'courseid' => $courseid,
-        'timemodified' => time()
-    );
-    
-    // Si existe una respuesta previa, mantener todos los datos existentes
-    if ($existing_response) {
-        $data['id'] = $existing_response->id;
-        // Copiar todas las respuestas existentes
-        for ($i = 1; $i <= 98; $i++) {
-            if (isset($existing_response->{"q{$i}"})) {
-                $data["q{$i}"] = $existing_response->{"q{$i}"};
-            }
-        }
-        // Mantener puntuaciones existentes si las hay
-        if (isset($existing_response->score_c)) $data['score_c'] = $existing_response->score_c;
-        if (isset($existing_response->score_h)) $data['score_h'] = $existing_response->score_h;
-        if (isset($existing_response->score_a)) $data['score_a'] = $existing_response->score_a;
-        if (isset($existing_response->score_s)) $data['score_s'] = $existing_response->score_s;
-        if (isset($existing_response->score_i)) $data['score_i'] = $existing_response->score_i;
-        if (isset($existing_response->score_d)) $data['score_d'] = $existing_response->score_d;
-        if (isset($existing_response->score_e)) $data['score_e'] = $existing_response->score_e;
-        if (isset($existing_response->is_completed)) $data['is_completed'] = $existing_response->is_completed;
-        if (isset($existing_response->timemodified)) $data['timemodified'] = $existing_response->timemodified;
-        if (isset($existing_response->timecreated)) $data['timecreated'] = $existing_response->timecreated;
-    } else {
-        $data['timecreated'] = time();
-        $data['is_completed'] = 0;
-    }
-    
-    // Actualizar solo las respuestas de la página actual
-    $questions_per_page = 10;
-    $start_question = ($page - 1) * $questions_per_page + 1;
-    $end_question = min($page * $questions_per_page, 98);
-    
-    // Recopilar TODAS las respuestas enviadas en el formulario (no solo las de la página actual)
-    // Esto permite guardar progreso parcial
-    for ($i = 1; $i <= 98; $i++) {
-        $response = optional_param("q{$i}", null, PARAM_INT);
-        if ($response !== null) {
-            $data["q{$i}"] = $response;
-        }
-    }
-    
-    // Validar que todas las preguntas de la página actual estén respondidas (solo para navegación)
-    $current_page_complete = true;
-    $missing_questions_current_page = array();
-    
-    for ($i = $start_question; $i <= $end_question; $i++) {
-        $response = optional_param("q{$i}", null, PARAM_INT);
-        if ($response !== null) {
-            $data["q{$i}"] = $response;
-        } else {
-            // Verificar si ya existe una respuesta previa para esta pregunta
-            if (!$existing_response || !isset($existing_response->{"q{$i}"}) || $existing_response->{"q{$i}"} === null) {
-                $current_page_complete = false;
-                $missing_questions_current_page[] = $i;
-            }
-        }
-    }
-    
-    // Verificar si TODO el test está completo (todas las 98 preguntas)
-    $completed = true;
-    for ($i = 1; $i <= 98; $i++) {
-        if (!isset($data["q{$i}"]) || $data["q{$i}"] === null) {
-            $completed = false;
-            break;
-        }
-    }
-    
-    // Determinar total de páginas
-    $total_pages = ceil(98 / $questions_per_page);
-    
-    // Procesar según la acción del botón
-    switch ($action) {
-        case 'autosave':
-            // Silent auto-save - no validation, no redirect
-            if ($existing_response) {
-                $DB->update_record('block_chaside_responses', $data);
-            } else {
-                try {
-                    $DB->insert_record('block_chaside_responses', $data);
-                } catch (dml_exception $e) {
-                    // Race condition: another request inserted the record
-                    $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
-                    if ($current_record) {
-                        $data['id'] = $current_record->id;
-                        $DB->update_record('block_chaside_responses', $data);
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
-            // Return JSON response for AJAX
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true]);
-            exit;
-            
-        case 'previous':
-            // Ir a página anterior - siempre permite (guarda automáticamente)
-            if ($existing_response) {
-                $DB->update_record('block_chaside_responses', $data);
-            } else {
-                try {
-                    $DB->insert_record('block_chaside_responses', $data);
-                } catch (dml_exception $e) {
-                    // Race condition: another request inserted the record
-                    $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
-                    if ($current_record) {
-                        $data['id'] = $current_record->id;
-                        $DB->update_record('block_chaside_responses', $data);
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
-            
-            if ($page > 1) {
-                $redirect_url = new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'blockid' => $blockid, 'page' => $page - 1));
-                redirect($redirect_url, get_string('progress_saved', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
-            }
-            break;
-            
-        case 'next':
-            // Ir a página siguiente - solo si la página actual está completa
-            if ($page < $total_pages) {
-                if (!$current_page_complete) {
-                    $message = get_string('complete_current_page', 'block_chaside') . ' (' . count($missing_questions_current_page) . ' ' . get_string('questions_unanswered', 'block_chaside') . ')';
-                    redirect($PAGE->url, $message, null, \core\output\notification::NOTIFY_ERROR);
-                } else {
-                    // Guardar progreso antes de navegar
-                    if ($existing_response) {
-                        $DB->update_record('block_chaside_responses', $data);
-                    } else {
-                        try {
-                            $DB->insert_record('block_chaside_responses', $data);
-                        } catch (dml_exception $e) {
-                            // Race condition: another request inserted the record
-                            $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
-                            if ($current_record) {
-                                $data['id'] = $current_record->id;
-                                $DB->update_record('block_chaside_responses', $data);
-                            } else {
-                                throw $e;
-                            }
-                        }
-                    }
-                    
-                    $redirect_url = new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'blockid' => $blockid, 'page' => $page + 1, 'scroll' => 'highlight_first'));
-                    redirect($redirect_url, get_string('progress_saved', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
-                }
-            }
-            break;
-            
-        case 'finish':
-            // SECURITY: Validate ALL 98 questions are answered before finishing
-            $all_questions_answered = true;
-            $missing_questions = array();
-            
-            for ($i = 1; $i <= 98; $i++) {
-                if (!isset($data["q{$i}"]) || $data["q{$i}"] === null) {
-                    $all_questions_answered = false;
-                    $missing_questions[] = $i;
-                }
-            }
-            
-            if ($all_questions_answered) {
-                // Calcular puntuaciones solo cuando esté completamente terminado
-                $scores = $facade->calculate_scores($data);
-                $data['score_c'] = $scores['C'];
-                $data['score_h'] = $scores['H'];
-                $data['score_a'] = $scores['A'];
-                $data['score_s'] = $scores['S'];
-                $data['score_i'] = $scores['I'];
-                $data['score_d'] = $scores['D'];
-                $data['score_e'] = $scores['E'];
-                $data['is_completed'] = 1;
-                $data['timemodified'] = time();
-                
-                // Actualizar con las puntuaciones finales
-                $DB->update_record('block_chaside_responses', $data);
-                
-                $course_url = new moodle_url('/course/view.php', array('id' => $courseid));
-                redirect($course_url, get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
-            } else {
-                // Find first unanswered question and redirect to that page
-                $first_unanswered = $missing_questions[0];
-                $redirect_page = ceil($first_unanswered / $questions_per_page);
-                
-                $message = get_string('all_questions_must_be_answered', 'block_chaside') . ' (' . count($missing_questions) . ' ' . get_string('questions_remaining', 'block_chaside') . ')';
-                $redirect_url = new moodle_url('/blocks/chaside/view.php', 
-                               array('courseid' => $courseid, 'blockid' => $blockid, 'page' => $redirect_page));
-                redirect($redirect_url, $message, null, \core\output\notification::NOTIFY_ERROR);
-            }
-            break;
-    }
-}
-
-// Si el test ya está completado, redirigir a resultados (NO permitir retomar)
-if ($existing_response && $existing_response->is_completed) {
-    $results_url = new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid, 'blockid' => $blockid));
-    redirect($results_url, get_string('test_already_completed', 'block_chaside'), null, \core\output\notification::NOTIFY_INFO);
-}
-
-echo $OUTPUT->header();
-
-// Configuración de paginación
-$questions_per_page = 10;
-$total_pages = ceil(98 / $questions_per_page);
-$start_question = ($page - 1) * $questions_per_page + 1;
-$end_question = min($page * $questions_per_page, 98);
+// Pagination settings
+$questions_per_page = BLOCK_CHASIDE_QUESTIONS_PER_PAGE;
+$total_questions = BLOCK_CHASIDE_TOTAL_QUESTIONS;
+$total_pages = ceil($total_questions / $questions_per_page);
 
 // SECURITY: Validate that user cannot skip pages without completing previous ones
 if ($existing_response && $page > 1) {
@@ -283,7 +51,7 @@ if ($existing_response && $page > 1) {
     
     for ($p = 1; $p < $page; $p++) {
         $page_start = ($p - 1) * $questions_per_page + 1;
-        $page_end = min($p * $questions_per_page, 98);
+        $page_end = min($p * $questions_per_page, $total_questions);
         $page_complete = true;
         
         for ($i = $page_start; $i <= $page_end; $i++) {
@@ -304,26 +72,294 @@ if ($existing_response && $page > 1) {
     // If trying to access a page beyond allowed, redirect to max allowed
     if ($page > $max_allowed_page) {
         redirect(new moodle_url('/blocks/chaside/view.php', 
-                 array('courseid' => $courseid, 'blockid' => $blockid, 'page' => $max_allowed_page)),
-                 get_string('complete_previous_pages', 'block_chaside'),
-                 null, \core\output\notification::NOTIFY_WARNING);
+                 array('courseid' => $courseid, 'page' => $max_allowed_page)));
     }
 }
 
-echo html_writer::tag('h2', get_string('test_title', 'block_chaside'));
+// If coming from "continue test" link without explicit page, calculate which page to show
+if ($existing_response && !isset($_GET['page'])) {
+    // Find first unanswered question
+    $first_unanswered = null;
+    for ($i = 1; $i <= $total_questions; $i++) {
+        $field = "q{$i}";
+        if (!isset($existing_response->$field) || $existing_response->$field === null) {
+            $first_unanswered = $i;
+            break;
+        }
+    }
+    
+    // Calculate page for first unanswered question
+    if ($first_unanswered !== null) {
+        $page = ceil($first_unanswered / $questions_per_page);
+    }
+}
+
+// Calculate question range for current page (needed for rendering)
+$start_question = ($page - 1) * $questions_per_page + 1;
+$end_question = min($page * $questions_per_page, $total_questions);
+
+// Calculate how many questions are answered
+$answered_count = 0;
+if ($existing_response) {
+    for ($i = 1; $i <= $total_questions; $i++) {
+        $field = "q{$i}";
+        if (isset($existing_response->$field) && $existing_response->$field !== null) {
+            $answered_count++;
+        }
+    }
+}
+
+// Process form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_sesskey();
+    
+    // If the test is already complete, DON'T allow modifications
+    if ($existing_response && $existing_response->is_completed) {
+        $results_url = new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid));
+        redirect($results_url);
+    }
+    
+    $action = optional_param('action', 'save', PARAM_ALPHA);
+    
+    // Prepare base data
+    $data = array(
+        'userid' => $USER->id,
+        'timemodified' => time()
+    );
+    
+    // If a previous response exists, retain all existing data.
+    if ($existing_response) {
+        $data['id'] = $existing_response->id;
+        // Copy all existing answers
+        for ($i = 1; $i <= BLOCK_CHASIDE_TOTAL_QUESTIONS; $i++) {
+            if (isset($existing_response->{"q{$i}"})) {
+                $data["q{$i}"] = $existing_response->{"q{$i}"};
+            }
+        }
+        // Maintain existing scores if any
+        if (isset($existing_response->score_c)) $data['score_c'] = $existing_response->score_c;
+        if (isset($existing_response->score_h)) $data['score_h'] = $existing_response->score_h;
+        if (isset($existing_response->score_a)) $data['score_a'] = $existing_response->score_a;
+        if (isset($existing_response->score_s)) $data['score_s'] = $existing_response->score_s;
+        if (isset($existing_response->score_i)) $data['score_i'] = $existing_response->score_i;
+        if (isset($existing_response->score_d)) $data['score_d'] = $existing_response->score_d;
+        if (isset($existing_response->score_e)) $data['score_e'] = $existing_response->score_e;
+        if (isset($existing_response->is_completed)) $data['is_completed'] = $existing_response->is_completed;
+        if (isset($existing_response->timemodified)) $data['timemodified'] = $existing_response->timemodified;
+        if (isset($existing_response->timecreated)) $data['timecreated'] = $existing_response->timecreated;
+    } else {
+        $data['timecreated'] = time();
+        $data['is_completed'] = 0;
+    }
+    
+    // Collect ALL responses submitted through the form (not just those on the current page)
+    // This allows you to save partial progress
+    $has_any_answer = false;
+    for ($i = 1; $i <= $total_questions; $i++) {
+        $response = optional_param("q{$i}", null, PARAM_INT);
+        if ($response !== null) {
+            $data["q{$i}"] = $response;
+            $has_any_answer = true;
+        }
+    }
+    
+    // If there is no response AND there is no previous record, do not create an empty one.
+    if (!$has_any_answer && !$existing_response) {
+        // For autosave with no response, simply return success without doing anything.
+        if ($action === 'autosave') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'No data to save']);
+            exit;
+        }
+        // For browsing, allow but do not create a log.
+    }
+    
+    // Verify that all questions on the current page are answered (for navigation purposes only)
+    $current_page_complete = true;
+    $missing_questions_current_page = array();
+    
+    for ($i = $start_question; $i <= $end_question; $i++) {
+        $response = optional_param("q{$i}", null, PARAM_INT);
+        if ($response !== null) {
+            $data["q{$i}"] = $response;
+        } else {
+            // Check if there is already a previous answer to this question.
+            if (!$existing_response || !isset($existing_response->{"q{$i}"}) || $existing_response->{"q{$i}"} === null) {
+                $current_page_complete = false;
+                $missing_questions_current_page[] = $i;
+            }
+        }
+    }
+    
+    // Verify if the ENTIRE test is complete (all questions)
+    $completed = true;
+    for ($i = 1; $i <= $total_questions; $i++) {
+        if (!isset($data["q{$i}"]) || $data["q{$i}"] === null) {
+            $completed = false;
+            break;
+        }
+    }
+    
+    // Process according to the button action
+    switch ($action) {
+        case 'autosave':
+            // Silent auto-save - no validation, no redirect
+            // Only save if there is at least one response
+            if ($has_any_answer || $existing_response) {
+                if ($existing_response) {
+                    $DB->update_record('block_chaside_responses', $data);
+                } else {
+                    try {
+                        $DB->insert_record('block_chaside_responses', $data);
+                    } catch (dml_exception $e) {
+                        // Race condition: another request inserted the record
+                        $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                        if ($current_record) {
+                            $data['id'] = $current_record->id;
+                            $DB->update_record('block_chaside_responses', $data);
+                        } else {
+                            throw $e;
+                        }
+                    }
+                }
+            }
+            // Return JSON response for AJAX
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+            exit;
+            
+        case 'previous':
+            // Go to previous page - always allows (automatically saves only if there are replies)
+            if ($has_any_answer || $existing_response) {
+                if ($existing_response) {
+                    $DB->update_record('block_chaside_responses', $data);
+                } else {
+                    try {
+                        $DB->insert_record('block_chaside_responses', $data);
+                    } catch (dml_exception $e) {
+                        // Race condition: another request inserted the record
+                        $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                        if ($current_record) {
+                            $data['id'] = $current_record->id;
+                            $DB->update_record('block_chaside_responses', $data);
+                        } else {
+                            throw $e;
+                        }
+                    }
+                }
+            }
+            
+            if ($page > 1) {
+                $redirect_url = new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page - 1));
+                redirect($redirect_url, get_string('progress_saved', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+            }
+            break;
+            
+        case 'next':
+            // Go to the next page - only if the current page is fully answered
+            if ($page < $total_pages) {
+                if (!$current_page_complete) {
+                    $message = get_string('complete_current_page', 'block_chaside') . ' (' . count($missing_questions_current_page) . ' ' . get_string('questions_unanswered', 'block_chaside') . ')';
+                    redirect($PAGE->url, $message, null, \core\output\notification::NOTIFY_ERROR);
+                } else {
+                    // Save progress before navigating (only if there are answers)
+                    if ($has_any_answer || $existing_response) {
+                        if ($existing_response) {
+                            $DB->update_record('block_chaside_responses', $data);
+                        } else {
+                            try {
+                                $DB->insert_record('block_chaside_responses', $data);
+                            } catch (dml_exception $e) {
+                                // Race condition: another request inserted the record
+                                $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                                if ($current_record) {
+                                    $data['id'] = $current_record->id;
+                                    $DB->update_record('block_chaside_responses', $data);
+                                } else {
+                                    throw $e;
+                                }
+                            }
+                        }
+                    }
+                    
+                    $redirect_url = new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1));
+                    redirect($redirect_url, get_string('progress_saved', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+                }
+            }
+            break;
+            
+        case 'finish':
+            // SECURITY: Validate ALL questions are answered before finishing
+            $all_questions_answered = true;
+            $missing_questions = array();
+            
+            for ($i = 1; $i <= $total_questions; $i++) {
+                if (!isset($data["q{$i}"]) || $data["q{$i}"] === null) {
+                    $all_questions_answered = false;
+                    $missing_questions[] = $i;
+                }
+            }
+            
+            if ($all_questions_answered) {
+                // Calculate scores only when fully completed
+                $scores = $facade->calculate_scores($data);
+                $data['score_c'] = $scores['C'];
+                $data['score_h'] = $scores['H'];
+                $data['score_a'] = $scores['A'];
+                $data['score_s'] = $scores['S'];
+                $data['score_i'] = $scores['I'];
+                $data['score_d'] = $scores['D'];
+                $data['score_e'] = $scores['E'];
+                $data['is_completed'] = 1;
+                $data['timemodified'] = time();
+                
+                // Update with final scores
+                $DB->update_record('block_chaside_responses', $data);
+                
+                $course_url = new moodle_url('/course/view.php', array('id' => $courseid));
+                redirect($course_url, get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+            } else {
+                // Find first unanswered question and redirect to that page
+                $first_unanswered = $missing_questions[0];
+                $redirect_page = ceil($first_unanswered / $questions_per_page);
+                
+                $message = get_string('all_questions_must_be_answered', 'block_chaside') . ' (' . count($missing_questions) . ' ' . get_string('questions_remaining', 'block_chaside') . ')';
+                $redirect_url = new moodle_url('/blocks/chaside/view.php',
+                               array('courseid' => $courseid, 'page' => $redirect_page));
+                redirect($redirect_url, $message, null, \core\output\notification::NOTIFY_ERROR);
+            }
+            break;
+    }
+}
+
+// If the test is already completed, redirect to results (DO NOT allow retake)
+if ($existing_response && $existing_response->is_completed) {
+    $results_url = new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid));
+    redirect($results_url);
+}
+
+echo $OUTPUT->header();
+
+// Display chaside icon centered above title
+$iconurl = new moodle_url('/blocks/chaside/pix/chaside_icon.svg');
+echo '<div style="text-align: center; margin-bottom: 15px;">';
+echo '<img src="' . $iconurl . '" alt="CHASIDE Icon" style="width: 70px; height: 70px; display: block; margin: 0 auto 10px auto;" />';
+echo '</div>';
+
+echo html_writer::tag('h2', get_string('test_title', 'block_chaside'), array('style' => 'text-align: center; color: #ffb600;'));
 echo html_writer::tag('p', get_string('test_description', 'block_chaside'));
 
-// Info box sobre preguntas obligatorias (similar a learning_style)
-echo '<div style="background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">';
+// Info box about mandatory questions (similar to learning_style)
+echo '<div style="background-color: #fffbf0; border-left: 4px solid #ffb600; padding: 12px 16px; margin-bottom: 20px; border-radius: 4px;">';
 echo '<strong>' . get_string('note', 'block_chaside') . ':</strong> ';
 echo get_string('all_questions_required', 'block_chaside');
 echo '</div>';
 
 
-// Formulario
+// Form
 echo html_writer::start_tag('form', array('method' => 'post', 'action' => '', 'id' => 'chasideTestForm'));
 
-// Agregar token de seguridad CSRF
+// Add CSRF security token
 echo html_writer::empty_tag('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()));
 
 for ($i = $start_question; $i <= $end_question; $i++) {
@@ -334,11 +370,11 @@ for ($i = $start_question; $i <= $end_question; $i++) {
         $current_value = $existing_response->{"q{$i}"};
     }
     
-    // Contenedor principal de la pregunta con borde y espaciado
+    // Main question container with border and spacing
     echo html_writer::start_tag('div', array('class' => 'card mb-3 shadow-sm', 'id' => "question-{$i}", 'data-question' => $i));
     echo html_writer::start_tag('div', array('class' => 'card-body'));
     
-    // Texto de la pregunta
+    // Question text
     echo html_writer::start_tag('div', array('class' => 'row align-items-center'));
     echo html_writer::start_tag('div', array('class' => 'col-md-8'));
     echo html_writer::tag('h6', 
@@ -351,7 +387,7 @@ for ($i = $start_question; $i <= $end_question; $i++) {
     echo html_writer::start_tag('div', array('class' => 'col-md-4'));
     echo html_writer::start_tag('div', array('class' => 'btn-group w-100', 'role' => 'group', 'aria-label' => 'Respuesta'));
     
-    // Opción SÍ
+    // Option YES
     $yes_classes = 'btn btn-outline-primary flex-fill radio-btn chaside-btn-yes';
     if ($current_value === '1') {
         $yes_classes = 'btn btn-primary flex-fill radio-btn chaside-btn-yes active';
@@ -362,7 +398,6 @@ for ($i = $start_question; $i <= $end_question; $i++) {
         'name' => "q{$i}",
         'value' => '1',
         'id' => "q{$i}_yes",
-        // Keep input visually hidden but still usable for form submission and native toggling.
         'style' => 'position: absolute; opacity: 0;',
         'checked' => ($current_value === '1') ? 'checked' : null
     ));
@@ -370,7 +405,7 @@ for ($i = $start_question; $i <= $end_question; $i++) {
     echo get_string('yes', 'block_chaside');
     echo html_writer::end_tag('label');
     
-    // Opción NO
+    // Option NO
     $no_classes = 'btn btn-outline-secondary flex-fill radio-btn chaside-btn-no';
     if ($current_value === '0') {
         $no_classes = 'btn btn-secondary flex-fill radio-btn chaside-btn-no active';
@@ -395,14 +430,17 @@ for ($i = $start_question; $i <= $end_question; $i++) {
     echo html_writer::end_tag('div'); // card
 }
 
-// Navegación
-echo html_writer::start_tag('div', array('class' => 'mt-4 d-flex justify-content-between align-items-center'));
+// Navigation (match learning_style/personality_test layout)
+echo html_writer::start_tag('div', array(
+    'class' => 'navigation-buttons',
+    'style' => 'display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;'
+));
 
-// Columna izquierda: Botón anterior
+// Left column: Previous button
 echo html_writer::start_tag('div');
 if ($page > 1) {
-    echo html_writer::tag('button', 
-        '<i class="fa fa-arrow-left me-2"></i>' . get_string('btn_previous', 'block_chaside'),
+    echo html_writer::tag('button',
+        get_string('btn_previous', 'block_chaside'),
         array(
             'type' => 'submit',
             'name' => 'action',
@@ -413,26 +451,28 @@ if ($page > 1) {
 }
 echo html_writer::end_tag('div');
 
-// Columna derecha: Botones de acción
-echo html_writer::start_tag('div', array('class' => 'd-flex gap-2'));
-
+// Right column: Next/Finish
+echo html_writer::start_tag('div');
 if ($page < $total_pages) {
     echo html_writer::tag('button',
-        get_string('btn_next', 'block_chaside') . '<i class="fa fa-arrow-right ms-2"></i>',
+        get_string('btn_next', 'block_chaside'),
         array(
             'type' => 'submit',
             'name' => 'action',
             'value' => 'next',
-            'class' => 'btn btn-primary'
+            'class' => 'btn btn-primary',
+            // Plugin palette (CHASIDE yellow)
+            'style' => 'background: linear-gradient(135deg, #ffd966 0%, #ffb600 100%); border: none;'
         )
     );
 } else {
     echo html_writer::tag('button',
-        '<i class="fa fa-check-circle me-2"></i>' . get_string('btn_finish', 'block_chaside'),
+        get_string('btn_finish', 'block_chaside'),
         array(
             'type' => 'submit',
             'name' => 'action',
             'value' => 'finish',
+            'id' => 'submitBtn',
             'class' => 'btn btn-success'
         )
     );
@@ -442,198 +482,7 @@ echo html_writer::end_tag('div');
 echo html_writer::end_tag('div');
 echo html_writer::end_tag('form');
 
-// Agregar estilos CSS personalizados
-echo html_writer::start_tag('style');
-echo "
-/* Colores del bloque CHASIDE (morado/purple) */
-:root {
-    --chaside-primary: #673ab7;
-    --chaside-primary-dark: #5e35b1;
-    --chaside-primary-darker: #512da8;
-    --chaside-secondary: #b39ddb;
-    --chaside-light: #ede7f6;
-}
-
-body#page-blocks-chaside-view .question-text {
-    font-weight: 500 !important;
-    color: #212529 !important;
-    line-height: 1.4 !important;
-}
-
-body#page-blocks-chaside-view .card {
-    border: 1px solid #e9ecef !important;
-    transition: all 0.2s ease-in-out !important;
-}
-
-/* Estilo para preguntas sin responder después de intentar avanzar */
-body#page-blocks-chaside-view .card.unanswered {
-    border: 2px solid #d32f2f !important;
-    background-color: #ffebee !important;
-}
-
-body#page-blocks-chaside-view .card.unanswered .question-text {
-    color: #d32f2f !important;
-}
-
-body#page-blocks-chaside-view .card:hover {
-    border-color: var(--chaside-primary) !important;
-    box-shadow: 0 4px 8px rgba(103, 58, 183, 0.1) !important;
-}
-
-body#page-blocks-chaside-view .btn-group label {
-    cursor: pointer !important;
-    transition: all 0.2s ease-in-out !important;
-    font-weight: 500 !important;
-    padding: 8px 16px !important;
-}
-
-body#page-blocks-chaside-view .btn-group label:hover {
-    transform: translateY(-1px) !important;
-}
-
-/* Botón Sí - Color primario del bloque (morado) */
-body#page-blocks-chaside-view .chaside-btn-yes.btn-outline-primary {
-    border-color: var(--chaside-primary) !important;
-    color: var(--chaside-primary) !important;
-    background-color: #ffffff !important;
-}
-
-body#page-blocks-chaside-view .chaside-btn-yes.btn-outline-primary:hover {
-    background: var(--chaside-light) !important;
-    color: var(--chaside-primary) !important;
-}
-
-body#page-blocks-chaside-view .chaside-btn-yes.btn-primary,
-body#page-blocks-chaside-view .chaside-btn-yes.btn-primary.active {
-    background: linear-gradient(135deg, var(--chaside-primary) 0%, var(--chaside-primary-dark) 100%) !important;
-    border-color: var(--chaside-primary) !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 6px rgba(103, 58, 183, 0.3) !important;
-}
-
-/* Botón No - Lila suave (color secundario del bloque) */
-body#page-blocks-chaside-view .chaside-btn-no.btn-outline-secondary {
-    border-color: var(--chaside-secondary) !important;
-    color: var(--chaside-secondary) !important;
-    background-color: #ffffff !important;
-}
-
-body#page-blocks-chaside-view .chaside-btn-no.btn-outline-secondary:hover {
-    background: var(--chaside-light) !important;
-    color: var(--chaside-secondary) !important;
-}
-
-body#page-blocks-chaside-view .chaside-btn-no.btn-secondary,
-body#page-blocks-chaside-view .chaside-btn-no.btn-secondary.active {
-    background: linear-gradient(135deg, var(--chaside-secondary) 0%, #9575cd 100%) !important;
-    border-color: var(--chaside-secondary) !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 6px rgba(179, 157, 219, 0.3) !important;
-}
-
-body#page-blocks-chaside-view .radio-btn {
-    position: relative !important;
-}
-
-body#page-blocks-chaside-view .radio-btn input[type='radio'] {
-    position: absolute !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-body#page-blocks-chaside-view .badge {
-    font-size: 0.85em !important;
-    min-width: 24px !important;
-    text-align: center !important;
-    color: #ffffff !important;
-    background-color: var(--chaside-primary) !important;
-}
-
-/* Botones de navegación con colores del bloque - MÁS ESPECÍFICOS */
-body#page-blocks-chaside-view form button.btn.btn-secondary,
-body#page-blocks-chaside-view form button.btn-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
-    border-color: #6c757d !important;
-    color: #ffffff !important;
-}
-
-body#page-blocks-chaside-view form button.btn.btn-secondary:hover,
-body#page-blocks-chaside-view form button.btn-secondary:hover {
-    background: linear-gradient(135deg, #5a6268 0%, #545b62 100%) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3) !important;
-    color: #ffffff !important;
-    border-color: #6c757d !important;
-}
-
-/* Card highlight when all questions answered */
-body#page-blocks-chaside-view .card.all-answered-highlight {
-    border: 3px solid #28a745 !important;
-    background-color: #d4edda !important;
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
-}
-
-body#page-blocks-chaside-view form button.btn.btn-primary,
-body#page-blocks-chaside-view form button.btn-primary {
-    background: linear-gradient(135deg, var(--chaside-primary) 0%, var(--chaside-primary-dark) 100%) !important;
-    border-color: var(--chaside-primary) !important;
-    color: #ffffff !important;
-}
-
-body#page-blocks-chaside-view form button.btn.btn-primary:hover,
-body#page-blocks-chaside-view form button.btn-primary:hover {
-    background: linear-gradient(135deg, var(--chaside-primary-dark) 0%, var(--chaside-primary-darker) 100%) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(103, 58, 183, 0.3) !important;
-    color: #ffffff !important;
-    border-color: var(--chaside-primary) !important;
-}
-
-body#page-blocks-chaside-view form button.btn.btn-success,
-body#page-blocks-chaside-view form button.btn-success {
-    background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
-    border-color: #28a745 !important;
-    color: #ffffff !important;
-}
-
-body#page-blocks-chaside-view form button.btn.btn-success:hover,
-body#page-blocks-chaside-view form button.btn-success:hover {
-    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3) !important;
-    color: #ffffff !important;
-    border-color: #28a745 !important;
-}
-
-@media (max-width: 768px) {
-    body#page-blocks-chaside-view .btn-group {
-        flex-direction: column !important;
-        width: 100% !important;
-    }
-    
-    body#page-blocks-chaside-view .btn-group label {
-        margin-bottom: 5px !important;
-        border-radius: 4px !important;
-    }
-    
-    body#page-blocks-chaside-view .col-md-8, 
-    body#page-blocks-chaside-view .col-md-4 {
-        margin-bottom: 15px !important;
-    }
-}
-
-body#page-blocks-chaside-view .question-text {
-    margin-bottom: 0 !important;
-}
-
-body#page-blocks-chaside-view .fa {
-    font-size: 0.9em !important;
-}
-";
-echo html_writer::end_tag('style');
-
-// JavaScript para validación en tiempo real y manejo de botones
+// JavaScript for real-time validation and button handling
 echo html_writer::start_tag('script');
 echo "
 document.addEventListener('DOMContentLoaded', function() {
@@ -661,7 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Función para actualizar el estado visual de los botones
+    // Function to update the visual state of the buttons
     function updateButtonStates(questionName) {
         const yesLabel = form.querySelector('label[for=\"' + questionName + '_yes\"]');
         const noLabel = form.querySelector('label[for=\"' + questionName + '_no\"]');
@@ -679,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
             noLabel.className = 'btn btn-outline-secondary flex-fill radio-btn chaside-btn-no';
         }
         
-        // Remover clase de no respondida si se responde
+        // Remove unanswered class if answered
         if (formAttempted && (yesInput.checked || noInput.checked)) {
             const card = yesInput.closest('.card');
             if (card) {
@@ -694,15 +543,15 @@ document.addEventListener('DOMContentLoaded', function() {
         autoSaveTimer = setTimeout(autoSaveProgress, 2000); // Save 2 seconds after last change
     }
     
-    // Manejo robusto de clicks (captura) para evitar que el tema bloquee la interacción.
-    // Similar al enfoque de personality_test: delegación + actualización del valor.
+    // Robust click handling (capture) to prevent the theme from blocking interaction.
+    // Similar to the personality_test approach: delegation + value update.
     document.addEventListener('click', function(e) {
         const label = e.target.closest('label.radio-btn');
         if (!label || !form.contains(label)) {
             return;
         }
 
-        // Obtener el input asociado (por contenido o por atributo for).
+        // Get the associated input (by content or by for attribute).
         let input = label.querySelector('input[type=\"radio\"]');
         if (!input) {
             const forId = label.getAttribute('for');
@@ -715,12 +564,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Marcar y refrescar UI.
+        // Mark and refresh UI.
         input.checked = true;
         updateButtonStates(input.name);
         validateCurrentPage();
 
-        // Auto-guardar después de 2s.
+        // Auto-save after 2s.
         if (autoSaveTimer) {
             clearTimeout(autoSaveTimer);
         }
@@ -735,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateCurrentPage() {
         const questions = {};
         
-        // Obtener todas las preguntas de la página actual
+        // Get all questions on the current page
         radioInputs.forEach(function(input) {
             const questionName = input.name;
             if (!questions[questionName]) {
@@ -746,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Verificar si todas las preguntas están respondidas
+        // Check if all questions are answered
         const allAnswered = Object.values(questions).every(function(answered) {
             return answered === true;
         });
@@ -754,7 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return allAnswered;
     }
     
-    // Agregar event listeners a todos los radio buttons directamente
+    // Add event listeners to all radio buttons directly
     radioInputs.forEach(function(input) {
         input.addEventListener('change', function(e) {
             updateButtonStates(this.name);
@@ -762,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Inicializar estados visuales al cargar (por si el tema modifica clases).
+    // Initialize visual states on load (in case the theme modifies classes).
     const seenQuestions = new Set();
     radioInputs.forEach(function(input) {
         if (!seenQuestions.has(input.name)) {
@@ -771,13 +620,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Prevenir envío del formulario para los botones que requieren validación
+    // Prevent form submission for buttons that require validation
     form.addEventListener('submit', function(e) {
-        // Obtener el botón que se presionó
+        // Get the button that was pressed
         const submitter = e.submitter;
         const action = submitter ? submitter.value : 'save';
         
-        // Validar para botones 'next' y 'finish'
+        // Validate for 'next' and 'finish' buttons
         if (action !== 'next' && action !== 'finish') {
             // Permitir envío sin validación para save, previous
             return true;
@@ -788,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!validateCurrentPage()) {
             e.preventDefault();
             
-            // Marcar visualmente las preguntas sin responder
+            // Visually mark unanswered questions
             const questions = {};
             radioInputs.forEach(function(input) {
                 const questionName = input.name;
@@ -800,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Primero agregar clase 'unanswered' a TODAS las tarjetas sin respuesta
+            // First add 'unanswered' class to ALL unanswered cards
             Object.keys(questions).forEach(function(questionName) {
                 if (!questions[questionName]) {
                     const input = form.querySelector('input[name=\"' + questionName + '\"]');
@@ -813,7 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Luego hacer scroll a la primera pregunta sin responder
+            // Then scroll to the first unanswered question
             const firstUnanswered = document.querySelector('.card.unanswered');
             if (firstUnanswered) {
                 firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -823,86 +672,87 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+";
+echo html_writer::end_tag('script');
 
-// Auto-scroll to first unanswered question with green highlight
-const scrollToQuestion = " . json_encode($scroll_to_question) . ";
-if (scrollToQuestion && scrollToQuestion !== '' && scrollToQuestion !== '0') {
-    if (scrollToQuestion === 'finish') {
-        // Scroll to finish button when all questions answered
-        setTimeout(function() {
-            const finishBtn = document.querySelector('button[value=\"finish\"]');
-            if (finishBtn) {
-                finishBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Add green pulsing highlight to the button
-                finishBtn.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.8)';
-                finishBtn.style.transition = 'all 0.3s ease';
-                
-                // Remove highlight after 5 seconds
-                setTimeout(function() {
-                    finishBtn.style.boxShadow = '';
-                }, 5000);
-            }
-        }, 300);
-    } else if (scrollToQuestion === 'highlight_first') {
-        // Highlight and scroll to first question on page (when navigating with next/previous buttons)
-        setTimeout(function() {
-            const firstCard = document.querySelector('.card');
-            if (firstCard) {
-                // Store original styles
-                const originalBorder = firstCard.style.border;
-                const originalBackground = firstCard.style.backgroundColor;
-                const originalBoxShadow = firstCard.style.boxShadow;
-                
-                // Apply green highlight
-                firstCard.style.setProperty('border', '2px solid #28a745', 'important');
-                firstCard.style.setProperty('background-color', '#d4edda', 'important');
-                firstCard.style.setProperty('box-shadow', '0 4px 8px rgba(40, 167, 69, 0.3)', 'important');
-                firstCard.style.transition = 'all 0.3s ease';
-                
-                // Scroll to it
-                firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Remove highlight after 5 seconds
-                setTimeout(function() {
-                    firstCard.style.border = originalBorder;
-                    firstCard.style.backgroundColor = originalBackground;
-                    firstCard.style.boxShadow = originalBoxShadow;
-                }, 5000);
-            }
-        }, 300);
-    } else {
-        // Scroll to specific question with green highlight
-        setTimeout(function() {
-            const questionNum = parseInt(scrollToQuestion);
-            const questionCard = document.getElementById('question-' + questionNum);
+// Auto-scroll to first unanswered question when continuing test
+if ($existing_response && $answered_count > 0 && $answered_count < 98 && !$scroll_to_finish) {
+    echo html_writer::start_tag('script');
+    echo "
+window.addEventListener('load', function() {
+    // Wait a bit for the page to fully render
+    setTimeout(function() {
+        // Find first unanswered question on current page
+        const questionCards = Array.from(document.querySelectorAll('.card')).filter(function(card) {
+            return card && card.id && card.id.indexOf('question-') === 0;
+        });
+        
+        const firstUnansweredCard = questionCards.find(function(card) {
+            return !card.querySelector('input[type=radio]:checked');
+        });
+        
+        if (firstUnansweredCard) {
+            // Store original styles
+            const originalStyles = {
+                border: firstUnansweredCard.style.border,
+                backgroundColor: firstUnansweredCard.style.backgroundColor,
+                boxShadow: firstUnansweredCard.style.boxShadow
+            };
             
-            if (questionCard) {
-                // Store original styles
-                const originalBorder = questionCard.style.border;
-                const originalBackground = questionCard.style.backgroundColor;
-                const originalBoxShadow = questionCard.style.boxShadow;
-                
-                // Apply green highlight
-                questionCard.style.setProperty('border', '2px solid #28a745', 'important');
-                questionCard.style.setProperty('background-color', '#d4edda', 'important');
-                questionCard.style.setProperty('box-shadow', '0 4px 8px rgba(40, 167, 69, 0.3)', 'important');
-                questionCard.style.transition = 'all 0.3s ease';
-                
-                // Scroll to it
-                questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Remove highlight after 5 seconds
-                setTimeout(function() {
-                    questionCard.style.border = originalBorder;
-                    questionCard.style.backgroundColor = originalBackground;
-                    questionCard.style.boxShadow = originalBoxShadow;
-                }, 5000);
-            }
-        }, 300);
-    }
+            firstUnansweredCard.style.setProperty('border', '2px solid #28a745', 'important');
+            firstUnansweredCard.style.setProperty('background-color', '#d4edda', 'important');
+            firstUnansweredCard.style.setProperty('box-shadow', '0 4px 8px rgba(40, 167, 69, 0.3)', 'important');
+            firstUnansweredCard.style.transition = 'all 0.3s ease';
+            
+            // Scroll to it
+            firstUnansweredCard.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            
+            // Remove highlight after 5 seconds
+            setTimeout(function() {
+                firstUnansweredCard.style.border = originalStyles.border;
+                firstUnansweredCard.style.backgroundColor = originalStyles.backgroundColor;
+                firstUnansweredCard.style.boxShadow = originalStyles.boxShadow;
+            }, 5000);
+        }
+    }, 300);
+});
+    ";
+    echo html_writer::end_tag('script');
 }
 
+// Scroll to finish button when coming from block with all questions answered
+if ($scroll_to_finish) {
+    echo html_writer::start_tag('script');
+    echo "
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        const finishBtn = document.querySelector('button[value=\"finish\"]');
+        if (finishBtn) {
+            finishBtn.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+            
+            // Add green pulsing highlight to the button
+            finishBtn.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.8)';
+            finishBtn.style.transition = 'all 0.3s ease';
+            
+            // Remove highlight after 5 seconds
+            setTimeout(function() {
+                finishBtn.style.boxShadow = '';
+            }, 5000);
+        }
+    }, 300);
+});
+    ";
+    echo html_writer::end_tag('script');
+}
+
+echo html_writer::start_tag('script');
+echo "
 // Track unsaved changes
 window.formChanged = false;
 window.originalValues = {};
@@ -933,8 +783,6 @@ document.addEventListener('change', function(e) {
         }
     }
 });
-
-// Auto-save handles persistence, no need for beforeunload warning
 ";
 echo html_writer::end_tag('script');
 

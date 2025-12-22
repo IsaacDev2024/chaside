@@ -2,7 +2,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Block name and settings
-$string['pluginname'] = 'CHASIDE - Vocational Test';
+$string['pluginname'] = 'Vocational Guidance Exploration';
 $string['chaside'] = 'CHASIDE';
 $string['chaside:addinstance'] = 'Add a new CHASIDE block';
 $string['chaside:myaddinstance'] = 'Add a new CHASIDE block to My Page';
@@ -14,7 +14,6 @@ $string['chaside:manage_responses'] = 'Manage CHASIDE test responses';
 $string['test_title'] = 'CHASIDE Vocational Orientation Test';
 $string['test_instructions'] = 'Test Instructions';
 $string['test_description'] = 'This test will help you discover your vocational interests. Answer "YES" or "NO" to each question according to what you really like to do.';
-$string['test_description_short'] = 'A vocational test that identifies your interests in 7 professional areas through 98 questions to help you make informed academic and career decisions.';
 $string['start_test'] = 'Start Test';
 $string['continue_test'] = 'Continue Test';
 $string['view_results'] = 'View Results';
@@ -22,6 +21,7 @@ $string['test_completed'] = 'Test Completed';
 $string['date_not_available'] = 'Date not available';
 $string['of'] = 'of';
 $string['highest_strength_in'] = 'Highest strength in';
+$string['your_orientation_results'] = 'Your Vocational Orientation';
 
 // Button labels
 $string['btn_previous'] = 'Previous Page';
@@ -32,17 +32,17 @@ $string['no'] = 'NO';
 
 // Test in progress strings
 $string['test_in_progress'] = 'Test in Progress';
-$string['test_in_progress_message'] = '{$a} is currently taking the CHASIDE test.';
+$string['test_in_progress_message'] = '{$a} has started the test but has not completed it yet.';
 $string['has_answered'] = 'Has answered';
 $string['questions'] = 'questions';
-$string['results_available_when_complete'] = 'Results will be available once {$a} completes the test by clicking the "Finish Test" button.';
-$string['back_to_admin'] = 'Back to Administration';
+$string['results_available_when_complete'] = 'Full results will be available when {$a} finishes the test.';
+$string['back_to_admin'] = 'Back to Administration Panel';
 $string['progress_label'] = 'Progress';
 
 // Labels for results display
 $string['your_results'] = 'Your Results';
+$string['viewing_results_of'] = 'Viewing results of {$a}';
 $string['area_scores'] = 'Area Scores';
-$string['top_areas'] = 'Your Top Areas';
 $string['your_top_area'] = 'Your Top Area';
 $string['second_top_area'] = 'Second Top Area';
 $string['other_strong_areas'] = 'Other Strong Areas';
@@ -51,6 +51,8 @@ $string['career_suggestions'] = 'Career Suggestions';
 $string['total_score'] = 'Total Score';
 $string['area_label'] = 'Area';
 $string['scores_chart_title'] = 'Total Scores Chart';
+
+$string['recommendation'] = 'Recommendation';
 
 // Area names
 $string['area_c'] = 'Administrative (C)';
@@ -170,18 +172,20 @@ $string['q96'] = 'Would you be part of a group opposed to a dictatorship?';
 $string['q97'] = 'Would you know how to install a wall outlet?';
 $string['q98'] = 'Are you able to convince others of your opinions?';
 
-// Admin strings
-$string['admin_dashboard'] = 'Administration Panel';
+// Admin strings    
+$string['admin_dashboard'] = 'Vocational Guidance Administration';
+$string['admin_dashboard_invitation'] = 'Go to Administration Panel';
 $string['student'] = 'Student';
-$string['completiondate'] = 'Date of Last Action';
+$string['completiondate'] = 'Last Action Date';
 $string['actions'] = 'Actions';
 $string['viewresults'] = 'View results';
 $string['deleteresponse'] = 'Delete response';
 $string['deleteresponseconfirm'] = 'Are you sure you want to delete the responses for {$a}? This action cannot be undone.';
 $string['response_deleted_success'] = 'The student\'s responses have been successfully deleted.';
-$string['no_responses_found'] = 'No responses found for this course.';
+$string['deleteduser'] = 'Deleted user';
+$string['no_responses_found'] = 'No results available yet.';
 $string['confirm_delete'] = 'Confirm deletion';
-$string['admin_dashboard_description'] = 'This panel shows all students who have completed the CHASIDE test in this course. You can delete a student\'s responses by clicking the delete button.';
+$string['admin_dashboard_description'] = 'CHASIDE Test administration panel. Here you can view detailed statistics, manage student responses and export data.';
 
 // Management interface strings
 $string['management_title'] = 'CHASIDE Test Management';
@@ -190,38 +194,61 @@ $string['completion_rate'] = 'Completion Rate';
 $string['completed'] = 'Completed';
 $string['in_progress'] = 'In Progress';
 $string['students_completed'] = 'students completed the test';
-$string['recent_completions'] = 'Recent Completions';
+$string['recent_completions'] = 'Recently Completed';
 $string['manage_responses'] = 'Administration Panel';
 $string['statistics'] = 'Statistics';
-$string['enrolled_students'] = 'Enrolled Students';
+$string['enrolled_students'] = 'Total Students';
 $string['total_completed'] = 'Total Completed';
-$string['participation_rate'] = 'Participation Rate';
 $string['area_statistics'] = 'Area Statistics';
 $string['average_score'] = 'Average Score';
 $string['preference'] = 'preference';
 $string['download_all_results'] = 'Download All Results';
+$string['download_csv'] = 'Export CSV';
+$string['download_json'] = 'Export JSON';
+$string['print'] = 'Print Results';
 $string['student_responses'] = 'Student Responses';
-$string['student_name'] = 'Student Name';
 $string['completion_status'] = 'Completion Status';
 $string['response_date'] = 'Response Date';
 $string['completed_status'] = 'Completed';
-$string['top_area'] = 'Top Area';
 $string['view_details'] = 'View Details';
 $string['not_started'] = 'Not Started';
+$string['response_deleted'] = 'Response deleted';
+$string['no_participants_message'] = 'No students have started the test yet.';
+$string['top_areas_distribution'] = 'Top Areas Distribution';
+$string['primary_area_title'] = 'Primary Area (Top 1) - What do most students choose?';
+$string['secondary_area_title'] = 'Secondary Interest (Top 2) - The second strongest option';
+$string['search_student'] = 'Search student...';
+$string['top_area'] = 'Top Area';
+$string['in_progress_status'] = 'In Progress';
+$string['view'] = 'View';
+$string['delete'] = 'Delete';
+$string['confirm_delete_yes'] = 'Yes, delete';
+$string['cancel'] = 'Cancel';
+$string['total_students'] = 'Total Students';
+$string['completed_tests'] = 'Completed Tests';
+$string['in_progress_tests'] = 'Tests in Progress';
+$string['general_statistics'] = 'General Statistics';
+$string['most_common_areas'] = 'Most Common Areas';
+$string['no_data_available'] = 'No data available';
+$string['average_dimensions'] = 'Average Dimensions';
+$string['participants_list'] = 'Participants List';
+$string['no_participants'] = 'No participants';
+$string['export_csv'] = 'Export CSV';
+$string['email'] = 'Email';
 
 // Student interface strings
 $string['vocational_orientation'] = 'Vocational Orientation';
 $string['discover_your_interests'] = 'Discover your interests and professional skills';
 $string['what_is_chaside'] = 'What is CHASIDE?';
-$string['chaside_description'] = 'A vocational test that identifies your interests in 7 professional areas to guide your academic and career decisions.';
+$string['chaside_description'] = 'The CHASIDE model connects your natural interests and aptitudes with seven major occupational areas. This assessment explores your profile to provide you with a clear vocational overview, helping you make confident career decisions that truly align with your talents and passions for the future.';
 $string['feature_98_questions'] = '98 Strategic Questions';
 $string['feature_7_areas'] = '7 Vocational Areas';
 $string['feature_instant_results'] = 'Instant and Detailed Results';
 $string['questions_unanswered'] = 'Questions Unanswered';
 $string['progress_saved'] = 'Progress saved successfully. Keep it up!!!';
-$string['test_completed_success'] = 'Test completed successfully. You can now view your results in the sidebar.';
+$string['test_completed_success'] = 'Congratulations, you can now view your results in the course sidebar.';
 $string['points'] = 'Points';
-$string['view_detailed_results'] = 'View detailed results';
+$string['view_detailed_results'] = 'View Detailed Results';
 
 // Additional interface strings
 $string['teachers_redirect_message'] = 'Teachers are redirected to the management panel';
@@ -254,7 +281,6 @@ $string['gap_aptitude_higher'] = 'Aptitude ≫ Interest';
 
 // Executive summary
 $string['executive_summary'] = 'Executive Summary';
-$string['top_areas_title'] = 'Top Areas';
 $string['quick_reading'] = 'Quick Reading';
 $string['gap_alerts'] = 'Gap Alerts';
 $string['detailed_table'] = 'Detailed Table by Area';
@@ -282,7 +308,6 @@ $string['export_technical_score'] = 'Technical Education Score (I)';
 $string['export_defense_security_score'] = 'Defense and Security Score (D)';
 $string['export_experimental_sciences_score'] = 'Experimental Sciences Score (E)';
 $string['export_top_area'] = 'Top Area';
-$string['export_score'] = 'Score';
 $string['export_filename'] = 'CHASIDE_Vocational_Orientation';
 
 // Validation and feedback strings
@@ -290,10 +315,12 @@ $string['note'] = 'Note';
 $string['all_questions_required'] = 'All questions on each page are required. You must answer all of them before continuing.';
 
 // Security validation strings
-$string['complete_previous_pages'] = 'Please complete all questions on previous pages before accessing this page.';
 $string['all_questions_must_be_answered'] = 'You must answer all 98 questions before finishing the test. You have been redirected to the first unanswered question.';
 
 // All questions answered strings
 $string['all_answered_title'] = 'All Questions Answered!';
 $string['all_answered_message'] = 'You have answered all 98 questions. Don\'t forget to click "Finish Test" to submit your answers and see your vocational orientation results!';
+
+// Test in progress and remind strings
+$string['remind_submit_test'] = 'Remind the student to click the "Finish Test" button to view the results.';
 $string['finish_test_now'] = 'Finish Test';

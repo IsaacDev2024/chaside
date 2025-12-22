@@ -14,7 +14,6 @@ $string['chaside:manage'] = 'Gestionar el test CHASIDE';
 $string['test_title'] = 'Exploración de orientación vocacional';
 $string['test_instructions'] = 'Instrucciones del Test';
 $string['test_description'] = 'Este test te ayudará a descubrir tus intereses vocacionales. Responde "SÍ" o "NO" a cada pregunta según lo que realmente te gusta hacer.';
-$string['test_description_short'] = 'Un test científico que identifica tus intereses vocacionales en 7 áreas profesionales a través de 98 preguntas para ayudarte a tomar decisiones académicas y profesionales informadas.';
 $string['start_test'] = 'Iniciar Test';
 $string['continue_test'] = 'Continuar Test';
 $string['view_results'] = 'Ver Resultados';
@@ -22,6 +21,7 @@ $string['test_completed'] = 'Test Completado';
 $string['date_not_available'] = 'Fecha no disponible';
 $string['of'] = 'de';
 $string['highest_strength_in'] = 'Mayor fortaleza en';
+$string['your_orientation_results'] = 'Tu Orientación Vocacional';
 
 // Button labels
 $string['btn_previous'] = 'Página Anterior';
@@ -32,17 +32,17 @@ $string['no'] = 'NO';
 
 // Test in progress strings
 $string['test_in_progress'] = 'Test en Progreso';
-$string['test_in_progress_message'] = '{$a} está realizando el test CHASIDE actualmente.';
+$string['test_in_progress_message'] = '{$a} ha comenzado el test pero aún no lo ha completado.';
 $string['has_answered'] = 'Ha respondido';
 $string['questions'] = 'preguntas';
-$string['results_available_when_complete'] = 'Los resultados estarán disponibles una vez que {$a} complete el test haciendo clic en el botón "Finalizar Test".';
-$string['back_to_admin'] = 'Volver a Administración';
+$string['results_available_when_complete'] = 'Los resultados completos estarán disponibles cuando {$a} termine el test.';
+$string['back_to_admin'] = 'Volver al Panel de Administración';
 $string['progress_label'] = 'Progreso';
 
 // Labels for results display
 $string['your_results'] = 'Tus Resultados';
+$string['viewing_results_of'] = 'Viendo los resultados de {$a}';
 $string['area_scores'] = 'Puntuaciones por Área';
-$string['top_areas'] = 'Tus Áreas Principales';
 $string['your_top_area'] = 'Tu Área Principal';
 $string['second_top_area'] = 'Segunda Área Principal';
 $string['other_strong_areas'] = 'Otras Áreas Destacadas';
@@ -51,6 +51,8 @@ $string['career_suggestions'] = 'Sugerencias de Carreras';
 $string['total_score'] = 'Puntuación Total';
 $string['area_label'] = 'Área';
 $string['scores_chart_title'] = 'Gráfico de Puntuaciones Totales';
+
+$string['recommendation'] = 'Recomendación';
 
 // Area names
 $string['area_c'] = 'Administrativa (C)';
@@ -171,7 +173,8 @@ $string['q97'] = '¿Te gustaría trabajar como profesional dirigiendo la constru
 $string['q98'] = '¿Sabes qué es el PIB? Se trata de un concepto económico. ¿Te gusta este tipo de tema?';
 
 // Admin strings
-$string['admin_dashboard'] = 'Panel de Administración';
+$string['admin_dashboard'] = 'Administración - Orientación Vocacional';
+$string['admin_dashboard_invitation'] = 'Ir al Panel de Administración';
 $string['student'] = 'Estudiante';
 $string['completiondate'] = 'Fecha de Última Acción';
 $string['actions'] = 'Acciones';
@@ -179,9 +182,10 @@ $string['viewresults'] = 'Ver resultados';
 $string['deleteresponse'] = 'Eliminar respuesta';
 $string['deleteresponseconfirm'] = '¿Estás seguro de que quieres eliminar las respuestas de {$a}? Esta acción no se puede deshacer.';
 $string['response_deleted_success'] = 'Las respuestas del estudiante han sido eliminadas exitosamente.';
-$string['no_responses_found'] = 'No se encontraron respuestas para este curso.';
+$string['deleteduser'] = 'Usuario eliminado';
+$string['no_responses_found'] = 'No hay resultados disponibles aún.';
 $string['confirm_delete'] = 'Confirmar eliminación';
-$string['admin_dashboard_description'] = 'Este panel muestra todos los estudiantes que han completado el test CHASIDE en este curso. Puedes eliminar las respuestas de un estudiante haciendo clic en el botón de eliminar.';
+$string['admin_dashboard_description'] = 'Panel de administración del Test CHASIDE. Aquí puedes ver estadísticas detalladas, gestionar respuestas de estudiantes y exportar datos.';
 
 // Management interface strings
 $string['management_title'] = 'Gestión del Test CHASIDE';
@@ -190,38 +194,61 @@ $string['completion_rate'] = 'Tasa de Finalización';
 $string['completed'] = 'Completados';
 $string['in_progress'] = 'En Progreso';
 $string['students_completed'] = 'estudiantes completaron el test';
-$string['recent_completions'] = 'Finalizaciones Recientes';
+$string['recent_completions'] = 'Finalizados Recientemente';
 $string['manage_responses'] = 'Panel de Administración';
 $string['statistics'] = 'Estadísticas';
-$string['enrolled_students'] = 'Estudiantes Inscritos';
+$string['enrolled_students'] = 'Total de Estudiantes';
 $string['total_completed'] = 'Total Completados';
-$string['participation_rate'] = 'Tasa de Participación';
 $string['area_statistics'] = 'Estadísticas por Área';
 $string['average_score'] = 'Puntuación Promedio';
 $string['preference'] = 'de preferencia';
 $string['download_all_results'] = 'Descargar Todos los Resultados';
+$string['download_csv'] = 'Exportar CSV';
+$string['download_json'] = 'Exportar JSON';
+$string['print'] = 'Imprimir Resultados';
 $string['student_responses'] = 'Respuestas de Estudiantes';
-$string['student_name'] = 'Nombre del Estudiante';
 $string['completion_status'] = 'Estado de Finalización';
 $string['completed_status'] = 'Completado';
 $string['response_date'] = 'Fecha de Respuesta';
-$string['top_area'] = 'Área Principal';
 $string['view_details'] = 'Ver Detalles';
 $string['not_started'] = 'No Iniciado';
+$string['response_deleted'] = 'Respuesta eliminada';
+$string['no_participants_message'] = 'Aún no hay estudiantes que hayan comenzado el test.';
+$string['top_areas_distribution'] = 'Distribución de Áreas Dominantes';
+$string['primary_area_title'] = 'Área Principal (Top 1) - ¿Qué eligen más los estudiantes?';
+$string['secondary_area_title'] = 'Interés Secundario (Top 2) - La segunda opción más fuerte';
+$string['search_student'] = 'Buscar estudiante...';
+$string['top_area'] = 'Área Principal';
+$string['in_progress_status'] = 'En Progreso';
+$string['view'] = 'Ver';
+$string['delete'] = 'Eliminar';
+$string['confirm_delete_yes'] = 'Sí, eliminar';
+$string['cancel'] = 'Cancelar';
+$string['total_students'] = 'Total de Estudiantes';
+$string['completed_tests'] = 'Tests Completados';
+$string['in_progress_tests'] = 'Tests en Progreso';
+$string['general_statistics'] = 'Estadísticas Generales';
+$string['most_common_areas'] = 'Áreas Más Comunes';
+$string['no_data_available'] = 'No hay datos disponibles';
+$string['average_dimensions'] = 'Promedios por Dimensión';
+$string['participants_list'] = 'Lista de Participantes';
+$string['no_participants'] = 'No hay participantes';
+$string['export_csv'] = 'Exportar CSV';
+$string['email'] = 'Correo Electrónico';
 
 // Student interface strings
 $string['vocational_orientation'] = 'Orientación Vocacional';
 $string['discover_your_interests'] = 'Descubre tus intereses y habilidades profesionales';
 $string['what_is_chaside'] = '¿Qué es CHASIDE?';
-$string['chaside_description'] = 'Una prueba vocacional que identifica tus intereses en 7 áreas profesionales para orientarte en tus decisiones académicas y laborales.';
+$string['chaside_description'] = 'El modelo CHASIDE conecta tus intereses y aptitudes naturales con siete grandes áreas ocupacionales. Esta evaluación explora tu perfil para ofrecerte un panorama vocacional claro, ayudándote a tomar decisiones de carrera seguras que se alineen verdaderamente con tus talentos y pasiones a futuro.';
 $string['feature_98_questions'] = '98 Preguntas Estratégicas';
 $string['feature_7_areas'] = '7 Áreas Vocacionales';
 $string['feature_instant_results'] = 'Resultados Instantáneos y Detallados';
 $string['questions_unanswered'] = 'Preguntas sin Responder';
 $string['progress_saved'] = 'Progreso guardado correctamente';
-$string['test_completed_success'] = 'Test completado exitosamente. Ahora puedes ver tus resultados en la barra lateral.';
+$string['test_completed_success'] = 'Enhorabuena, ahora puedes ver tus resultados en la barra lateral del curso.';
 $string['points'] = 'Puntos';
-$string['view_detailed_results'] = 'Ver resultados detallados';
+$string['view_detailed_results'] = 'Ver Resultados Detallados';
 
 // Additional interface strings
 $string['teachers_redirect_message'] = 'Los profesores son redirigidos al panel de gestión';
@@ -254,7 +281,6 @@ $string['gap_aptitude_higher'] = 'Aptitud ≫ Interés';
 
 // Executive summary
 $string['executive_summary'] = 'Resumen Ejecutivo';
-$string['top_areas_title'] = 'Áreas Principales';
 $string['quick_reading'] = 'Lectura Rápida';
 $string['gap_alerts'] = 'Alertas de Brecha';
 $string['detailed_table'] = 'Tabla Detallada por Área';
@@ -282,7 +308,6 @@ $string['export_technical_score'] = 'Puntuación Enseñanzas Técnicas (I)';
 $string['export_defense_security_score'] = 'Puntuación Defensa y Seguridad (D)';
 $string['export_experimental_sciences_score'] = 'Puntuación Ciencias Experimentales (E)';
 $string['export_top_area'] = 'Área Principal';
-$string['export_score'] = 'Puntuación';
 $string['export_filename'] = 'CHASIDE_Orientacion_Vocacional';
 
 // Validation and feedback strings
@@ -290,10 +315,12 @@ $string['note'] = 'Nota';
 $string['all_questions_required'] = 'Todas las preguntas de cada página son obligatorias. Debes responder todas antes de continuar.';
 
 // Security validation strings
-$string['complete_previous_pages'] = 'Por favor, completa todas las preguntas de las páginas anteriores antes de acceder a esta página.';
 $string['all_questions_must_be_answered'] = 'Debes responder las 98 preguntas antes de finalizar el test. Has sido redirigido a la primera pregunta sin responder.';
 
 // All questions answered strings
 $string['all_answered_title'] = '¡Todas las Preguntas Respondidas!';
 $string['all_answered_message'] = 'Has respondido las 98 preguntas. ¡No olvides hacer clic en "Finalizar Test" para enviar tus respuestas y ver tus resultados de orientación vocacional!';
+
+// Test in progress and remind strings
+$string['remind_submit_test'] = 'Recuérdale al estudiante que haga clic en el botón "Finalizar Test" para ver los resultados.';
 $string['finish_test_now'] = 'Finalizar Test';

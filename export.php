@@ -2,50 +2,20 @@
 // This file is part of Moodle - http://moodle.org/
 
 require_once('../../config.php');
+require_once(__DIR__ . '/lib.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $format = required_param('format', PARAM_ALPHA);
-
-$course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
-$context = context_course::instance($courseid);
-
-require_login($course);
-require_capability('block/chaside:manage_responses', $context);
-
 $currentgroup = optional_param('group', 0, PARAM_INT);
 
-// Get enrolled students in this course
-$enrolled_users = get_enrolled_users($context, 'block/chaside:take_test', $currentgroup, 'u.id');
-$enrolled_ids = array_keys($enrolled_users);
+$result = block_chaside_get_completed_responses($courseid, $currentgroup);
 
-// Defensive: exclude any teacher/manager-type user even if misconfigured.
-$student_ids = array();
-foreach ($enrolled_ids as $candidateid) {
-    $candidateid = (int)$candidateid;
-    if (is_siteadmin($candidateid)) {
-        continue;
-    }
-    if (has_capability('block/chaside:viewreports', $context, $candidateid) || has_capability('block/chaside:manage_responses', $context, $candidateid)) {
-        continue;
-    }
-    $student_ids[] = $candidateid;
+if ($result === false) {
+    redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
 }
-$enrolled_ids = $student_ids;
 
-// Get all completed responses for enrolled students only
-$responses = array();
-if (!empty($enrolled_ids)) {
-    list($insql, $params) = $DB->get_in_or_equal($enrolled_ids, SQL_PARAMS_NAMED, 'user');
-    $params['completed'] = 1;
-    
-    $responses = $DB->get_records_sql("
-        SELECT cr.*, u.firstname, u.lastname, u.email, u.idnumber
-        FROM {block_chaside_responses} cr
-        JOIN {user} u ON cr.userid = u.id
-        WHERE cr.userid $insql AND cr.is_completed = :completed
-        ORDER BY cr.timemodified DESC
-    ", $params);
-}
+list($course, $responses) = $result;
+$context = context_course::instance($courseid);
 
 if (empty($responses)) {
     redirect(new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid)), 

@@ -69,6 +69,23 @@ function block_chaside_get_student_ids($context, $groupid = 0) {
 }
 
 /**
+ * Helper function to get the mapping of area codes to string keys.
+ * 
+ * @return array Mapping of area code (e.g., 'C') to string key suffix (e.g., 'administrative').
+ */
+function block_chaside_get_area_keys() {
+    return [
+        'C' => 'administrative',
+        'H' => 'humanities',
+        'A' => 'artistic',
+        'S' => 'health_sciences',
+        'I' => 'technical',
+        'D' => 'defense_security',
+        'E' => 'experimental_sciences'
+    ];
+}
+
+/**
  * Helper function to prepare export data for a single response.
  *
  * @param stdClass $response The response object joined with user data.
@@ -99,36 +116,25 @@ function block_chaside_prepare_export_row($response, $facade) {
         return isset($detailed_scores[$area][$type]) ? $detailed_scores[$area][$type] : '';
     };
     
-    return array(
+    $row = array(
         'student_id' => $response->idnumber,
         'student_name' => $response->firstname . ' ' . $response->lastname,
         'student_email' => $response->email,
         'completion_date' => date('Y-m-d H:i:s', $response->timemodified),
-        'administrative_score' => $get_score('C'),
-        'administrative_interests' => $get_detailed('C', 'interes_score'),
-        'administrative_aptitudes' => $get_detailed('C', 'aptitud_score'),
-        'humanities_score' => $get_score('H'),
-        'humanities_interests' => $get_detailed('H', 'interes_score'),
-        'humanities_aptitudes' => $get_detailed('H', 'aptitud_score'),
-        'artistic_score' => $get_score('A'),
-        'artistic_interests' => $get_detailed('A', 'interes_score'),
-        'artistic_aptitudes' => $get_detailed('A', 'aptitud_score'),
-        'health_sciences_score' => $get_score('S'),
-        'health_sciences_interests' => $get_detailed('S', 'interes_score'),
-        'health_sciences_aptitudes' => $get_detailed('S', 'aptitud_score'),
-        'technical_score' => $get_score('I'),
-        'technical_interests' => $get_detailed('I', 'interes_score'),
-        'technical_aptitudes' => $get_detailed('I', 'aptitud_score'),
-        'defense_security_score' => $get_score('D'),
-        'defense_security_interests' => $get_detailed('D', 'interes_score'),
-        'defense_security_aptitudes' => $get_detailed('D', 'aptitud_score'),
-        'experimental_sciences_score' => $get_score('E'),
-        'experimental_sciences_interests' => $get_detailed('E', 'interes_score'),
-        'experimental_sciences_aptitudes' => $get_detailed('E', 'aptitud_score'),
-        'top_area_1' => isset($top_areas[0]) ? $top_areas[0]['area'] : '',
-        'top_area_2' => isset($top_areas[1]) ? $top_areas[1]['area'] : '',
-        'top_area_3' => isset($top_areas[2]) ? $top_areas[2]['area'] : ''
     );
+
+    $areas = block_chaside_get_area_keys();
+    foreach ($areas as $code => $key) {
+        $row[$key . '_score'] = $get_score($code);
+        $row[$key . '_interests'] = $get_detailed($code, 'interes_score');
+        $row[$key . '_aptitudes'] = $get_detailed($code, 'aptitud_score');
+    }
+
+    $row['top_area_1'] = isset($top_areas[0]) ? $top_areas[0]['area'] : '';
+    $row['top_area_2'] = isset($top_areas[1]) ? $top_areas[1]['area'] : '';
+    $row['top_area_3'] = isset($top_areas[2]) ? $top_areas[2]['area'] : '';
+
+    return $row;
 }
 
 /**
@@ -137,34 +143,24 @@ function block_chaside_prepare_export_row($response, $facade) {
  * @return array Array of translated headers.
  */
 function block_chaside_get_export_headers() {
-    return array(
+    $headers = array(
         get_string('export_student_id', 'block_chaside'),
         get_string('export_student_name', 'block_chaside'),
         get_string('export_student_email', 'block_chaside'),
         get_string('export_completion_date', 'block_chaside'),
-        get_string('export_administrative_score', 'block_chaside'),
-        get_string('export_administrative_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_administrative_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_humanities_score', 'block_chaside'),
-        get_string('export_humanities_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_humanities_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_artistic_score', 'block_chaside'),
-        get_string('export_artistic_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_artistic_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_health_sciences_score', 'block_chaside'),
-        get_string('export_health_sciences_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_health_sciences_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_technical_score', 'block_chaside'),
-        get_string('export_technical_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_technical_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_defense_security_score', 'block_chaside'),
-        get_string('export_defense_security_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_defense_security_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_experimental_sciences_score', 'block_chaside'),
-        get_string('export_experimental_sciences_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
-        get_string('export_experimental_sciences_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
-        get_string('export_top_area', 'block_chaside') . ' 1',
-        get_string('export_top_area', 'block_chaside') . ' 2', 
-        get_string('export_top_area', 'block_chaside') . ' 3'
     );
+
+    $areas = block_chaside_get_area_keys();
+    foreach ($areas as $code => $key) {
+        $base_string = get_string('export_' . $key . '_score', 'block_chaside');
+        $headers[] = $base_string;
+        $headers[] = $base_string . ' - ' . get_string('interests', 'block_chaside');
+        $headers[] = $base_string . ' - ' . get_string('aptitudes', 'block_chaside');
+    }
+
+    $headers[] = get_string('export_top_area', 'block_chaside') . ' 1';
+    $headers[] = get_string('export_top_area', 'block_chaside') . ' 2';
+    $headers[] = get_string('export_top_area', 'block_chaside') . ' 3';
+
+    return $headers;
 }

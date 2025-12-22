@@ -2,26 +2,26 @@
 // This file is part of Moodle - http://moodle.org/
 
 require_once('../../config.php');
-require_once('block_chaside.php');
+
+define('BLOCK_CHASIDE_QUESTIONS_PER_PAGE', 10);
+define('BLOCK_CHASIDE_TOTAL_QUESTIONS', 98);
 
 $courseid = required_param('courseid', PARAM_INT);
-$blockid = required_param('blockid', PARAM_INT);
 $userid = optional_param('userid', $USER->id, PARAM_INT);
 
 $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $context = context_course::instance($courseid);
 
 require_login($course);
-
-// Verificar permisos
-if ($userid != $USER->id) {
-    require_capability('block/chaside:viewreports', $context);
+// Verificar permisos (redirreción silenciosa como learning_style/personality_test)
+if ($userid != $USER->id && !has_capability('block/chaside:viewreports', $context)) {
+    redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
 }
 
-$PAGE->set_url('/blocks/chaside/view_results.php', array('courseid' => $courseid, 'blockid' => $blockid, 'userid' => $userid));
-$PAGE->set_title(get_string('your_results', 'block_chaside'));
+$PAGE->set_url('/blocks/chaside/view_results.php', array('courseid' => $courseid, 'userid' => $userid));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
+$PAGE->requires->css('/blocks/chaside/styles.css');
 
 // Obtener los resultados del usuario (en cualquier curso)
 $response = $DB->get_record('block_chaside_responses', array(
@@ -32,7 +32,7 @@ if (!$response) {
     echo $OUTPUT->header();
     echo html_writer::tag('div', get_string('test_not_found', 'block_chaside'), array('class' => 'alert alert-warning'));
     echo html_writer::link(
-        new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'blockid' => $blockid)),
+        new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid)),
         get_string('start_test', 'block_chaside'),
         array('class' => 'btn btn-primary')
     );
@@ -41,7 +41,12 @@ if (!$response) {
 }
 
 // Get user information BEFORE checking completion status
-$user = $DB->get_record('user', array('id' => $userid));
+$user = $DB->get_record('user', array('id' => $userid)); 
+
+$pagetitle = ($userid != $USER->id)
+    ? get_string('viewing_results_of', 'block_chaside', fullname($user))
+    : get_string('your_results', 'block_chaside');
+$PAGE->set_title($pagetitle);
 
 // Check if test is in progress (similar to personality_test)
 if ($response->is_completed == 0) {
@@ -49,13 +54,13 @@ if ($response->is_completed == 0) {
     
     // Calculate progress
     $answered = 0;
-    for ($i = 1; $i <= 98; $i++) {
+    for ($i = 1; $i <= BLOCK_CHASIDE_TOTAL_QUESTIONS; $i++) {
         $field = "q{$i}";
         if (isset($response->$field) && $response->$field !== null) {
             $answered++;
         }
     }
-    $progress_percentage = round(($answered / 98) * 100, 1);
+    $progress_percentage = round(($answered / BLOCK_CHASIDE_TOTAL_QUESTIONS) * 100, 1);
     
     echo '<div class="container-fluid">';
     echo '<div class="alert alert-warning" role="alert">';
@@ -68,18 +73,34 @@ if ($response->is_completed == 0) {
     echo '<strong>' . $progress_percentage . '%</strong>';
     echo '</div>';
     echo '</div>';
-    echo '<p><strong>' . get_string('has_answered', 'block_chaside') . ':</strong> ' . $answered . '/98 ' . get_string('questions', 'block_chaside') . '</p>';
+    echo '<p><strong>' . get_string('has_answered', 'block_chaside') . ':</strong> ' . $answered . '/' . BLOCK_CHASIDE_TOTAL_QUESTIONS . ' ' . get_string('questions', 'block_chaside') . '</p>';
+    
+    // Special message if all questions answered but not submitted
+    if ($answered == BLOCK_CHASIDE_TOTAL_QUESTIONS) {
+        echo '<div class="alert alert-info mt-2" role="alert">';
+        echo '<i class="fa fa-info-circle"></i> ';
+        echo '<strong>' . get_string('remind_submit_test', 'block_chaside') . '</strong>';
+        echo '</div>';
+    }
+    
     echo '<p class="mb-0"><em>' . get_string('results_available_when_complete', 'block_chaside', fullname($user)) . '</em></p>';
     echo '</div>';
     
-    // Link back to admin
-    if ($userid != $USER->id) {
-        echo '<div class="mt-4">';
-        echo '<a href="' . new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid)) . '" class="btn btn-secondary">';
-        echo '<i class="fa fa-arrow-left"></i> ' . get_string('back_to_admin', 'block_chaside');
-        echo '</a>';
-        echo '</div>';
+    // Navigation buttons (match personality_test pattern)
+    echo html_writer::start_div('mt-5 text-center d-flex gap-3 justify-content-center');
+    if (has_capability('block/chaside:viewreports', $context)) {
+        echo html_writer::link(
+            new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid)),
+            '<i class="fa fa-arrow-left mr-2"></i>' . get_string('back_to_admin', 'block_chaside'),
+            array('class' => 'btn btn-secondary btn-modern mr-3')
+        );
     }
+    echo html_writer::link(
+        new moodle_url('/course/view.php', array('id' => $courseid)),
+        '<i class="fa fa-home mr-2"></i>' . get_string('back_to_course', 'block_chaside'),
+        array('class' => 'btn btn-modern', 'style' => 'background: linear-gradient(135deg, #ffd966 0%, #ffb600 100%); border: none; color: white;')
+    );
+    echo html_writer::end_div();
     echo '</div>';
     
     echo $OUTPUT->footer();
@@ -87,7 +108,7 @@ if ($response->is_completed == 0) {
 }
 
 // Generate official CHASIDE results
-$facade = new ChasideFacade();
+$facade = new \block_chaside\facade();
 $response_array = (array) $response;
 
 // Get user information
@@ -103,26 +124,49 @@ $results = $facade->generate_results_json($response_array, $meta);
 
 echo $OUTPUT->header();
 
-echo html_writer::tag('h2', get_string('your_results', 'block_chaside'));
+$arealabels = array(
+    'C' => get_string('area_c', 'block_chaside'),
+    'H' => get_string('area_h', 'block_chaside'),
+    'A' => get_string('area_a', 'block_chaside'),
+    'S' => get_string('area_s', 'block_chaside'),
+    'I' => get_string('area_i', 'block_chaside'),
+    'D' => get_string('area_d', 'block_chaside'),
+    'E' => get_string('area_e', 'block_chaside'),
+);
+
+// Extract a friendly name + (letter) from strings like "Administrative (C)".
+$split_area_label = function(string $label): array {
+    $label = trim($label);
+    if (preg_match('/^(.*)\s*\(([CHASIDE])\)\s*$/u', $label, $m)) {
+        return array(trim($m[1]), $m[2]);
+    }
+    return array($label, '');
+};
+
+echo html_writer::start_tag('div', array('class' => 'chaside-results-page'));
+echo html_writer::start_tag('div', array('class' => 'container-fluid chaside-results-container'));
+
+echo html_writer::start_tag('div', array('class' => 'chaside-results-hero mb-4'));
+echo html_writer::tag('h2', $pagetitle, array('class' => 'chaside-page-title'));
 
 // Mostrar información del usuario si es administrador viendo resultados de otro usuario
 if ($userid != $USER->id) {
-    echo html_writer::tag('h3', fullname($user));
-    echo html_writer::tag('p', get_string('completion_date_label', 'block_chaside') . ' ' . userdate($response->timemodified));
+    echo html_writer::tag('div', get_string('completion_date_label', 'block_chaside') . ' ' . userdate($response->timemodified), array('class' => 'chaside-page-meta'));
 }
+echo html_writer::end_tag('div');
 
 // Executive Summary Section
 echo html_writer::start_tag('div', array('class' => 'chaside-executive-summary mb-4'));
-echo html_writer::tag('h3', get_string('executive_summary', 'block_chaside'));
+echo html_writer::tag('h3', get_string('executive_summary', 'block_chaside'), array('class' => 'chaside-section-title'));
 
 // Top areas display
 echo html_writer::start_tag('div', array('class' => 'row mb-3'));
 
 if ($results['resumen_ejecutivo']['top1']) {
     $top1 = $results['resumen_ejecutivo']['top1'];
-    echo html_writer::start_tag('div', array('class' => 'col-md-6'));
-    echo html_writer::start_tag('div', array('class' => 'card border-primary'));
-    echo html_writer::start_tag('div', array('class' => 'card-header bg-primary text-white'));
+    echo html_writer::start_tag('div', array('class' => 'col-md-6 mb-3'));
+    echo html_writer::start_tag('div', array('class' => 'card chaside-card border-chaside-primary'));
+    echo html_writer::start_tag('div', array('class' => 'card-header bg-chaside-primary text-white'));
     echo html_writer::tag('h4', '🥇 ' . get_string('your_top_area', 'block_chaside'), array('class' => 'mb-0'));
     echo html_writer::end_tag('div');
     echo html_writer::start_tag('div', array('class' => 'card-body'));
@@ -133,7 +177,7 @@ if ($results['resumen_ejecutivo']['top1']) {
     // Progress bar for top1
     echo html_writer::start_tag('div', array('class' => 'progress mb-2', 'style' => 'height: 20px;'));
     echo html_writer::tag('div', $top1['pct_total'] . '%', array(
-        'class' => 'progress-bar bg-primary',
+        'class' => 'progress-bar bg-chaside-primary',
         'style' => 'width: ' . $top1['pct_total'] . '%;',
         'role' => 'progressbar'
     ));
@@ -145,9 +189,9 @@ if ($results['resumen_ejecutivo']['top1']) {
 
 if ($results['resumen_ejecutivo']['top2']) {
     $top2 = $results['resumen_ejecutivo']['top2'];
-    echo html_writer::start_tag('div', array('class' => 'col-md-6'));
-    echo html_writer::start_tag('div', array('class' => 'card border-secondary'));
-    echo html_writer::start_tag('div', array('class' => 'card-header bg-secondary text-white'));
+    echo html_writer::start_tag('div', array('class' => 'col-md-6 mb-3'));
+    echo html_writer::start_tag('div', array('class' => 'card chaside-card border-chaside-secondary'));
+    echo html_writer::start_tag('div', array('class' => 'card-header bg-chaside-secondary text-white'));
     echo html_writer::tag('h4', '🥈 ' . get_string('second_top_area', 'block_chaside'), array('class' => 'mb-0'));
     echo html_writer::end_tag('div');
     echo html_writer::start_tag('div', array('class' => 'card-body'));
@@ -158,7 +202,7 @@ if ($results['resumen_ejecutivo']['top2']) {
     // Progress bar for top2
     echo html_writer::start_tag('div', array('class' => 'progress mb-2', 'style' => 'height: 20px;'));
     echo html_writer::tag('div', $top2['pct_total'] . '%', array(
-        'class' => 'progress-bar bg-secondary',
+        'class' => 'progress-bar bg-chaside-secondary',
         'style' => 'width: ' . $top2['pct_total'] . '%;',
         'role' => 'progressbar'
     ));
@@ -170,21 +214,49 @@ if ($results['resumen_ejecutivo']['top2']) {
 
 echo html_writer::end_tag('div'); // row
 
-// Quick reading
-if (!empty($results['resumen_ejecutivo']['lectura_rapida'])) {
-    echo html_writer::start_tag('div', array('class' => 'alert alert-info'));
-    echo html_writer::tag('h5', get_string('quick_reading', 'block_chaside'));
-    echo html_writer::tag('p', $results['resumen_ejecutivo']['lectura_rapida'], array('class' => 'mb-0'));
-    echo html_writer::end_tag('div');
-}
-
 // Gap alerts
 if (!empty($results['resumen_ejecutivo']['alertas_brecha'])) {
-    echo html_writer::start_tag('div', array('class' => 'alert alert-warning'));
-    echo html_writer::tag('h5', get_string('gap_alerts', 'block_chaside'));
+    echo html_writer::start_tag('div', array('class' => 'chaside-gap-alerts mb-3'));
+    echo html_writer::start_tag('div', array('class' => 'card chaside-card border-chaside-primary'));
+    echo html_writer::start_tag('div', array('class' => 'card-header chaside-card-header-soft'));
+    echo html_writer::tag('h5', '<i class="fa fa-exclamation-triangle mr-2"></i>' . get_string('gap_alerts', 'block_chaside'), array('class' => 'mb-0'));
+    echo html_writer::end_tag('div');
+    echo html_writer::start_tag('div', array('class' => 'card-body'));
+    echo html_writer::start_tag('div', array('class' => 'chaside-gap-grid'));
     foreach ($results['resumen_ejecutivo']['alertas_brecha'] as $alert) {
-        echo html_writer::tag('span', $alert['area'] . ': ' . $alert['tipo'], array('class' => 'badge badge-warning mr-2'));
+        $rawarea = isset($alert['area']) ? trim((string)$alert['area']) : '';
+        $tipo = isset($alert['tipo']) ? s((string)$alert['tipo']) : '';
+
+        $areacode = '';
+        if (preg_match('/^[CHASIDE]$/u', $rawarea)) {
+            $areacode = $rawarea;
+        } elseif (preg_match('/\(([CHASIDE])\)\s*$/u', $rawarea, $m)) {
+            $areacode = $m[1];
+        }
+
+        $label = $rawarea;
+        if ($areacode !== '' && isset($arealabels[$areacode])) {
+            $label = $arealabels[$areacode];
+        }
+
+        list($areaname, $arealetter) = $split_area_label((string)$label);
+        $areaname = s($areaname);
+        $arealetter = s($arealetter);
+
+        if ($arealetter !== '') {
+            $areaname .= ' (' . $arealetter . ')';
+        }
+
+        echo html_writer::start_tag('div', array('class' => 'chaside-gap-chip'));
+        echo html_writer::tag('div', $areaname, array('class' => 'chaside-gap-chip-title'));
+        $subtitle = trim($tipo);
+        
+        echo html_writer::tag('div', $subtitle, array('class' => 'chaside-gap-chip-subtitle'));
+        echo html_writer::end_tag('div');
     }
+    echo html_writer::end_tag('div');
+    echo html_writer::end_tag('div');
+    echo html_writer::end_tag('div');
     echo html_writer::end_tag('div');
 }
 
@@ -192,11 +264,11 @@ echo html_writer::end_tag('div'); // executive summary
 
 // Detailed Results Table
 echo html_writer::start_tag('div', array('class' => 'chaside-detailed-table mb-4'));
-echo html_writer::tag('h3', get_string('detailed_table', 'block_chaside'));
+echo html_writer::tag('h3', get_string('detailed_table', 'block_chaside'), array('class' => 'chaside-section-title'));
 
 echo html_writer::start_tag('div', array('class' => 'table-responsive'));
 echo html_writer::start_tag('table', array('class' => 'table table-striped table-bordered'));
-echo html_writer::start_tag('thead', array('class' => 'thead-dark'));
+echo html_writer::start_tag('thead');
 echo html_writer::start_tag('tr');
 echo html_writer::tag('th', get_string('area_label', 'block_chaside'), array('scope' => 'col'));
 echo html_writer::tag('th', get_string('interests', 'block_chaside') . ' (0-10)', array('scope' => 'col'));
@@ -215,11 +287,11 @@ foreach ($results['tabla_principal'] as $row) {
     $row_class = '';
     $row_style = '';
     if ($results['resumen_ejecutivo']['top1'] && $row['area'] == $results['resumen_ejecutivo']['top1']['area']) {
-        $row_class = 'table-primary';
-        $row_style = 'border-left: 4px solid #007bff;';
+        $row_class = 'table-chaside-primary';
+        $row_style = 'border-left: 4px solid #ffb600;';
     } elseif ($results['resumen_ejecutivo']['top2'] && $row['area'] == $results['resumen_ejecutivo']['top2']['area']) {
-        $row_class = 'table-secondary';
-        $row_style = 'border-left: 4px solid #6c757d;';
+        $row_class = 'table-chaside-secondary';
+        $row_style = 'border-left: 4px solid #ffd966;';
     }
     
     echo html_writer::start_tag('tr', array('class' => $row_class, 'style' => $row_style));
@@ -266,27 +338,40 @@ echo html_writer::end_tag('div');
 
 // Recommendations Section
 echo html_writer::start_tag('div', array('class' => 'chaside-recommendations mb-4'));
-echo html_writer::tag('h3', get_string('recommendations', 'block_chaside'));
-echo html_writer::start_tag('div', array('class' => 'alert alert-info'));
-echo html_writer::start_tag('ul', array('class' => 'mb-0'));
-foreach ($results['recomendaciones'] as $recommendation) {
-    echo html_writer::tag('li', $recommendation);
-}
-echo html_writer::end_tag('ul');
-echo html_writer::end_tag('div');
-echo html_writer::end_tag('div');
+echo html_writer::tag('h3', get_string('recommendations', 'block_chaside'), array('class' => 'chaside-section-title'));
 
-// Guidance Note
-echo html_writer::start_tag('div', array('class' => 'chaside-guidance mb-4'));
-echo html_writer::tag('h4', get_string('guidance_note', 'block_chaside'));
-echo html_writer::start_tag('div', array('class' => 'alert alert-secondary'));
-echo html_writer::tag('p', $results['apendice_opcional']['nota'], array('class' => 'mb-0'));
-echo html_writer::end_tag('div');
+$recommendations = !empty($results['recomendaciones']) ? $results['recomendaciones'] : array();
+
+// De-duplicate recommendations to avoid repeated lines (can happen when multiple rules produce the same advice).
+$recommendationsunique = array();
+foreach ($recommendations as $recommendation) {
+    $raw = (string)$recommendation;
+    $normalized = preg_replace('/\s+/u', ' ', trim($raw));
+    if ($normalized === '') {
+        continue;
+    }
+    if (!array_key_exists($normalized, $recommendationsunique)) {
+        $recommendationsunique[$normalized] = $raw;
+    }
+}
+$recommendations = array_values($recommendationsunique);
+$recommendationscount = count($recommendations);
+
+if ($recommendationscount > 0) {
+    echo html_writer::start_tag('div', array('class' => 'alert alert-info chaside-recommendations-list'));
+    echo html_writer::start_tag('ul', array('class' => 'mb-0'));
+    foreach ($recommendations as $recommendation) {
+        echo html_writer::tag('li', format_text($recommendation, FORMAT_PLAIN));
+    }
+    echo html_writer::end_tag('ul');
+    echo html_writer::end_tag('div');
+}
+
 echo html_writer::end_tag('div');
 
 // Visual Chart Section (Simple bar chart with CSS)
 echo html_writer::start_tag('div', array('class' => 'chaside-visual-chart mb-4'));
-echo html_writer::tag('h3', get_string('scores_chart_title', 'block_chaside'));
+echo html_writer::tag('h3', get_string('scores_chart_title', 'block_chaside'), array('class' => 'chaside-section-title'));
 
 $colors = array(
     'C' => '#FF6B6B',
@@ -319,88 +404,30 @@ foreach ($results['tabla_principal'] as $row) {
 
 echo html_writer::end_tag('div');
 
-// Navigation buttons
-echo html_writer::start_tag('div', array('class' => 'mt-4 text-center'));
-echo html_writer::link(
-    new moodle_url('/course/view.php', array('id' => $courseid)),
-    get_string('back_to_course', 'block_chaside'),
-    array('class' => 'btn btn-secondary me-2')
-);
-
-// Export button for admins/teachers
-if (has_capability('block/chaside:viewreports', $context)) {
-    echo html_writer::link(
-        new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid, 'blockid' => $blockid)),
-        get_string('admin_dashboard', 'block_chaside'),
-        array('class' => 'btn btn-primary')
-    );
-}
+// Guidance Note
+echo html_writer::start_tag('div', array('class' => 'chaside-guidance mb-4'));
+echo html_writer::tag('h4', get_string('guidance_note', 'block_chaside'), array('class' => 'chaside-section-title'));
+echo html_writer::tag('p', $results['apendice_opcional']['nota'], array('class' => 'mb-0'));
 echo html_writer::end_tag('div');
 
-// Enhanced CSS for better presentation
-echo html_writer::start_tag('style');
-echo '
-.chaside-executive-summary .card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
+// Navigation buttons (match personality_test pattern)
+echo html_writer::start_div('mt-5 text-center d-flex gap-3 justify-content-center');
+if (has_capability('block/chaside:viewreports', $context)) {
+    echo html_writer::link(
+        new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid)),
+        '<i class="fa fa-arrow-left mr-2"></i>' . get_string('back_to_admin', 'block_chaside'),
+        array('class' => 'btn btn-secondary btn-modern mr-3')
+    );
 }
+echo html_writer::link(
+    new moodle_url('/course/view.php', array('id' => $courseid)),
+    '<i class="fa fa-home mr-2"></i>' . get_string('back_to_course', 'block_chaside'),
+    array('class' => 'btn btn-modern', 'style' => 'background: linear-gradient(135deg, #ffd966 0%, #ffb600 100%); border: none; color: white;')
+);
+echo html_writer::end_div();
 
-.chaside-executive-summary .card:hover {
-    transform: translateY(-2px);
-}
-
-.chaside-detailed-table table {
-    font-size: 0.9rem;
-}
-
-.chaside-detailed-table .badge {
-    font-size: 0.75rem;
-}
-
-.chaside-visual-chart .score-item {
-    margin-bottom: 1rem;
-}
-
-.chaside-visual-chart .score-label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-    color: #333;
-}
-
-.chaside-visual-chart .progress {
-    height: 25px;
-    border-radius: 5px;
-}
-
-.chaside-visual-chart .progress-bar {
-    font-weight: bold;
-    line-height: 25px;
-    border-radius: 5px;
-}
-
-.table-primary {
-    background-color: rgba(0, 123, 255, 0.1) !important;
-}
-
-.table-secondary {
-    background-color: rgba(108, 117, 125, 0.1) !important;
-}
-
-.alert {
-    border-radius: 8px;
-}
-
-@media print {
-    .btn, .chaside-visual-chart {
-        display: none !important;
-    }
-    
-    .table {
-        font-size: 0.8rem;
-    }
-}
-';
-echo html_writer::end_tag('style');
+// Close wrapper containers
+echo html_writer::end_tag('div'); // .container-fluid
+echo html_writer::end_tag('div'); // .chaside-results-page
 
 echo $OUTPUT->footer();

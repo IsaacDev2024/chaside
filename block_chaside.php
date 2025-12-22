@@ -12,11 +12,14 @@ class block_chaside extends block_base {
     }
     
     public function get_content() {
-        global $USER, $COURSE, $OUTPUT, $DB;
+        global $USER, $COURSE, $OUTPUT, $DB, $CFG, $PAGE;
         
         if ($this->content !== null) {
             return $this->content;
         }
+        
+        // Load block styles
+        $PAGE->requires->css('/blocks/chaside/styles.css');
         
         $this->content = new stdClass();
         $this->content->text = '';
@@ -51,20 +54,7 @@ class block_chaside extends block_base {
                 $this->show_test_invitation($response);
                 $this->content->text = ob_get_clean();
             }
-        }
-
-        // Add link to admin dashboard for teachers/admins.
-        if (has_capability('block/chaside:viewreports', $context)) {
-            $adminurl = new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $this->page->course->id, 'blockid' => $this->instance->id]);
-            $this->content->footer = html_writer::div(
-                html_writer::link($adminurl, get_string('admin_dashboard', 'block_chaside'), [
-                    'class' => 'btn btn-primary btn-sm btn-block',
-                    'title' => get_string('admin_dashboard', 'block_chaside')
-                ]),
-                'text-center mt-2'
-            );
-        }
-        
+        }       
         return $this->content;
     }
     
@@ -75,7 +65,7 @@ class block_chaside extends block_base {
         $response_array = (array) $response;
         
         // Generate results using new official format
-        $facade = new ChasideFacade();
+        $facade = new \block_chaside\facade();
         $meta = array(
             'nombre' => fullname($USER),
             'curso' => $COURSE->shortname,
@@ -85,21 +75,24 @@ class block_chaside extends block_base {
         
         $results = $facade->generate_results_json($response_array, $meta);
         
-        // Completion date
-        $completion_date = '';
-        if (isset($response->timemodified) && $response->timemodified > 0) {
-            $completion_date = userdate($response->timemodified, get_string('strftimedatefullshort'));
-        } else {
-            $completion_date = get_string('date_not_available', 'block_chaside');
-        }
-        
         echo '<div class="chaside-results-block" style="padding: 15px; background: white; border-radius: 8px; border: 1px solid #dee2e6;">';
         
         // Header with success icon
         echo '<div class="chaside-header text-center mb-3">';
-        echo '<i class="fa fa-check-circle text-success" style="font-size: 1.5em;"></i>';
+        echo '<div style="position: relative; display: inline-block; line-height: 0;">';
+        echo $this->get_chaside_icon('4em', 'display: block;', false);
+        echo '<i class="fa fa-check" style="position: absolute; top: -6px; right: -9px; font-size: 1.4em; background: white; border-radius: 50%; line-height: 1;"></i>';
+        echo '</div>';
         echo '<h6 class="mt-2 mb-1 font-weight-bold">' . get_string('test_completed', 'block_chaside') . '</h6>';
-        echo '<small class="text-muted">' . $completion_date . '</small>';
+        echo '<small class="text-muted">' . get_string('your_orientation_results', 'block_chaside') . '</small>';
+        echo '</div>';
+        
+        // Test description
+        echo '<div class="chaside-description mb-3" style="background: #f8f9fa; padding: 10px 12px; border-radius: 5px; border-left: 3px solid #ffb600;">';
+        echo '<small class="text-muted" style="line-height: 1.5;">';
+        echo '<i class="fa fa-info-circle" style="color: #ffb600;"></i> ';
+        echo get_string('chaside_description', 'block_chaside');
+        echo '</small>';
         echo '</div>';
         
         // Executive Summary
@@ -109,11 +102,11 @@ class block_chaside extends block_base {
         // Top areas
         if ($results['resumen_ejecutivo']['top1']) {
             $top1 = $results['resumen_ejecutivo']['top1'];
-            echo '<div class="card border-primary mb-2" style="border-left: 4px solid #007bff !important;">';
+            echo '<div class="card border-primary mb-2" style="border-left: 4px solid #ffb600 !important; border-color: #ffb600 !important;">';
             echo '<div class="card-body p-2">';
             echo '<div class="d-flex justify-content-between align-items-center">';
             echo '<div>';
-            echo '<strong>1. ' . $top1['label'] . '</strong><br>';
+            echo '<strong style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; display: block;">1. ' . $top1['label'] . '</strong>';
             echo '<small class="text-muted">' . $top1['pct_total'] . '% (' . $top1['total'] . '/14)</small>';
             echo '</div>';
             echo '<div class="text-right">';
@@ -126,11 +119,11 @@ class block_chaside extends block_base {
         
         if ($results['resumen_ejecutivo']['top2']) {
             $top2 = $results['resumen_ejecutivo']['top2'];
-            echo '<div class="card border-secondary mb-2">';
+            echo '<div class="card border-secondary mb-2" style="border-color: #6c757d !important;">';
             echo '<div class="card-body p-2">';
             echo '<div class="d-flex justify-content-between align-items-center">';
             echo '<div>';
-            echo '<strong>2. ' . $top2['label'] . '</strong><br>';
+            echo '<strong style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; display: block;">2. ' . $top2['label'] . '</strong>';
             echo '<small class="text-muted">' . $top2['pct_total'] . '% (' . $top2['total'] . '/14)</small>';
             echo '</div>';
             echo '<div class="text-right">';
@@ -162,34 +155,64 @@ class block_chaside extends block_base {
         echo '<div class="chaside-recommendations mb-3">';
         echo '<h6 class="mb-2 font-weight-bold">' . get_string('recommendations', 'block_chaside') . '</h6>';
         echo '<ul class="list-unstyled">';
+
+        // Deduplicate recommendations (normalize whitespace) and keep order
+        $rawrecs = !empty($results['recomendaciones']) ? (array)$results['recomendaciones'] : array();
+        $recommendationsunique = array();
+        foreach ($rawrecs as $recommendation) {
+            $raw = (string)$recommendation;
+            $normalized = preg_replace('/\s+/u', ' ', trim($raw));
+            if ($normalized === '') {
+            continue;
+            }
+            if (!array_key_exists($normalized, $recommendationsunique)) {
+            $recommendationsunique[$normalized] = $raw;
+            }
+        }
+        $recommendations = array_values($recommendationsunique);
+
+        // Show only first 2 not duplicated recommendations
         $rec_count = 0;
-        foreach ($results['recomendaciones'] as $recommendation) {
-            if ($rec_count >= 2) break; // Show only first 2 in block view
-            echo '<li class="small mb-1"><i class="fa fa-arrow-right text-primary"></i> ' . $recommendation . '</li>';
+        foreach ($recommendations as $recommendation) {
+            if ($rec_count >= 2) break;
+            echo '<li class="small mb-1"><i class="fa fa-arrow-right" style="color: #ffb600;"></i> ' . $recommendation . '</li>';
             $rec_count++;
         }
+
         echo '</ul>';
         echo '</div>';
         
         // Action buttons
         echo '<div class="chaside-actions text-center">';
         $url = new moodle_url('/blocks/chaside/view_results.php', array(
-            'courseid' => $COURSE->id,
-            'blockid' => $this->instance->id
+            'courseid' => $COURSE->id
         ));
-        echo '<a href="' . $url . '" class="btn btn-primary btn-sm">';
+        echo '<a href="' . $url . '" class="btn btn-sm" style="background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%); border-color: #ffb600; color: #fff;">';
         echo '<i class="fa fa-chart-bar"></i> ' . get_string('view_detailed_results', 'block_chaside');
         echo '</a>';
         echo '</div>';
         
         echo '</div>';
-        
-        // Add custom CSS for results block
-        echo '<style>
-        .block_chaside .chaside-results-block .chaside-actions .btn {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+
+    }
+    
+    /**
+     * Helper method to generate chaside icon HTML (SVG)
+     * @param string $size Icon size (default: 1.8em)
+     * @param string $additional_style Additional inline styles
+     * @param bool $centered Whether to center the icon
+     * @return string HTML img tag with the SVG icon
+     */
+    private function get_chaside_icon($size = '1.8em', $additional_style = '', $centered = false) {
+        $iconurl = new moodle_url('/blocks/chaside/pix/chaside_icon.svg');
+        $style = 'width: ' . $size . '; height: ' . $size . '; vertical-align: middle; float: none !important;';
+        if ($centered) {
+            $style .= ' display: block; margin: 0 auto;';
         }
-        </style>';
+        if (!empty($additional_style)) {
+            $style .= ' ' . $additional_style;
+        }
+        return '<img class="chaside-icon" src="' . $iconurl . '" alt="CHASIDE Icon" style="' . $style . '" />';
     }
     
     private function show_test_invitation($response) {
@@ -197,9 +220,9 @@ class block_chaside extends block_base {
         
         echo '<div class="chaside-invitation-block">';
         
-        // Header with icon
+        // Header with CHASIDE icon
         echo '<div class="chaside-header text-center mb-3">';
-        echo '<i class="fa fa-compass" style="font-size: 2.2em; color: #5e35b1;"></i>';
+        echo $this->get_chaside_icon('4em', '', true);
         echo '<h6 class="mt-2 mb-1 font-weight-bold">' . get_string('vocational_orientation', 'block_chaside') . '</h6>';
         echo '<small class="text-muted">' . get_string('discover_your_interests', 'block_chaside') . '</small>';
         echo '</div>';
@@ -216,6 +239,14 @@ class block_chaside extends block_base {
             
             // Check if all questions are answered but test not completed
             $all_answered = ($answered_count == 98);
+            
+            // Always show test description
+            echo '<div class="chaside-description mb-3" style="background: white; padding: 10px 12px; border-radius: 5px; border-left: 3px solid #ffb600;">';
+            echo '<small class="text-muted" style="line-height: 1.5;">';
+            echo '<i class="fa fa-info-circle" style="color: #ffb600;"></i> ';
+            echo get_string('chaside_description', 'block_chaside');
+            echo '</small>';
+            echo '</div>';
             
             if ($all_answered) {
                 // Show special message when all questions answered (same style as personality_test)
@@ -234,14 +265,6 @@ class block_chaside extends block_base {
                 $button_class = 'btn-success';
                 $scroll_to_finish = true;
             } else {
-                // Show test description when in progress (same style as personality_test)
-                echo '<div class="chaside-description mb-3" style="background: white; padding: 10px 12px; border-radius: 5px; border-left: 3px solid #673ab7;">';
-                echo '<small class="text-muted" style="line-height: 1.5;">';
-                echo '<i class="fa fa-info-circle" style="color: #673ab7;"></i> ';
-                echo get_string('test_description_short', 'block_chaside');
-                echo '</small>';
-                echo '</div>';
-                
                 $button_text = get_string('continue_test', 'block_chaside');
                 $button_icon = 'fa-play';
                 $button_class = 'btn-primary';
@@ -263,8 +286,8 @@ class block_chaside extends block_base {
             echo '<span class="small font-weight-bold">' . get_string('your_progress', 'block_chaside') . '</span>';
             echo '<span class="small text-muted">' . $answered_count . '/98</span>';
             echo '</div>';
-            echo '<div class="progress mb-2" style="height: 8px; background-color: #f3e5f5;">';
-            echo '<div class="progress-bar" style="width: ' . $progress_percentage . '%; background: linear-gradient(90deg, #9575cd 0%, #673ab7 100%);"></div>';
+            echo '<div class="progress mb-2" style="height: 8px; background-color: #fffbf0;">';
+            echo '<div class="progress-bar" style="width: ' . $progress_percentage . '%; background: linear-gradient(90deg, #ffd966 0%, #ffb600 100%);"></div>';
             echo '</div>';
             echo '<small class="text-muted">' . number_format($progress_percentage, 1) . '% ' . get_string('completed_status', 'block_chaside') . '</small>';
             echo '</div>';
@@ -295,51 +318,31 @@ class block_chaside extends block_base {
         // Call to action
         echo '<div class="chaside-actions text-center">';
         
-        // Calculate which page to start on
-        $start_page = 1;
-        $scroll_param = null;
-        
-        if ($response) {
-            // Find first unanswered question
+        // Change button text, icon and URL based on completion status
+        if (isset($all_answered) && $all_answered) {
+            // All answered - go to last page with scroll_to_finish flag
             $questions_per_page = 10;
-            $first_empty = null;
+            $total_questions = 98;
+            $last_page = (int)ceil($total_questions / $questions_per_page);
             
-            if (isset($all_answered) && $all_answered) {
-                // If all answered, go to last page and scroll to finish button
-                $start_page = ceil(98 / $questions_per_page);
-                $scroll_param = 'finish';
-            } else {
-                // Find first unanswered question
-                for ($i = 1; $i <= 98; $i++) {
-                    $q_field = "q{$i}";
-                    if (!isset($response->$q_field) || $response->$q_field === null) {
-                        $first_empty = $i;
-                        $start_page = ceil($i / $questions_per_page);
-                        $scroll_param = $first_empty;
-                        break;
-                    }
-                }
-            }
+            $url = new moodle_url('/blocks/chaside/view.php', array(
+                'courseid' => $COURSE->id,
+                'page' => $last_page,
+                'scroll_to_finish' => 1
+            ));
+        } else {
+            // Test in progress - let view.php calculate the correct page automatically
+            $url = new moodle_url('/blocks/chaside/view.php', array(
+                'courseid' => $COURSE->id
+            ));
         }
-        
-        $url_params = array(
-            'courseid' => $COURSE->id,
-            'blockid' => $this->instance->id,
-            'page' => $start_page
-        );
-        
-        if ($scroll_param !== null) {
-            $url_params['scroll'] = $scroll_param;
-        }
-        
-        $url = new moodle_url('/blocks/chaside/view.php', $url_params);
         
         // Button styling based on state
         $button_style = '';
         if ($button_class == 'btn-primary') {
-            $button_style = 'background: linear-gradient(135deg, #673ab7 0%, #5e35b1 100%); border-color: #673ab7;';
+            $button_style = 'background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%); border-color: #ffb600;';
         } else if ($button_class == 'btn-success') {
-            $button_style = 'background: linear-gradient(135deg, #28a745 0%, #218838 100%); border-color: #28a745;';
+            $button_style = 'background: #28a745; border-color: #28a745;';
         }
         
         echo '<a href="' . $url . '" class="btn ' . $button_class . ' btn-block" style="' . $button_style . '">';
@@ -348,59 +351,6 @@ class block_chaside extends block_base {
         echo '</div>';
         
         echo '</div>';
-        
-        // Add custom CSS
-        echo '<style>
-        .block_chaside .chaside-invitation-block {
-            padding: 15px !important;
-            background: linear-gradient(135deg, #ede7f6 0%, #f8f9fa 100%) !important;
-            border-radius: 8px !important;
-            border: 1px solid #d1c4e9 !important;
-        }
-        .block_chaside .chaside-header i {
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
-        }
-        .block_chaside .chaside-progress {
-            background: white !important;
-            padding: 12px !important;
-            border-radius: 5px !important;
-            border: 1px solid #e9ecef !important;
-        }
-        .block_chaside .chaside-description .card {
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-        }
-        /* Eliminar solo el pin del título interior (h6.card-title) */
-        .block_chaside .chaside-description .card-title::before,
-        .block_chaside .chaside-description .card-title::after {
-            content: none !important;
-            display: none !important;
-        }
-        .block_chaside .chaside-description .card-title {
-            padding-left: 0 !important;
-            margin-left: 0 !important;
-            background: transparent !important;
-            background-color: transparent !important;
-            border-bottom: none !important;
-            font-weight: bold !important;
-        }
-        .block_chaside .chaside-invitation-block .chaside-actions .btn {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-            font-weight: 500 !important;
-            transition: all 0.3s ease !important;
-        }
-        .block_chaside .chaside-invitation-block .chaside-actions .btn-primary {
-            background-color: #673ab7 !important;
-            border-color: #673ab7 !important;
-        }
-        .block_chaside .chaside-invitation-block .chaside-actions .btn-primary:hover {
-            background-color: #5e35b1 !important;
-            border-color: #512da8 !important;
-        }
-        .block_chaside .chaside-invitation-block .chaside-actions .btn:hover {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-        }
-        </style>';
     }
     
     public function applicable_formats() {
@@ -417,10 +367,23 @@ class block_chaside extends block_base {
         // Get statistics
         $context = context_course::instance($COURSE->id);
         $enrolled_students = get_enrolled_users($context, 'block/chaside:take_test');
-        $total_enrolled = count($enrolled_students);
         
-        // Get responses only for enrolled students in this course
+        // Get responses only for enrolled students in this course.
+        // Defensive: exclude any teacher/manager-type user even if misconfigured.
         $enrolled_ids = array_keys($enrolled_students);
+        $student_ids = array();
+        foreach ($enrolled_ids as $candidateid) {
+            $candidateid = (int)$candidateid;
+            if (is_siteadmin($candidateid)) {
+                continue;
+            }
+            if (has_capability('block/chaside:viewreports', $context, $candidateid) || has_capability('block/chaside:manage_responses', $context, $candidateid)) {
+                continue;
+            }
+            $student_ids[] = $candidateid;
+        }
+        $enrolled_ids = $student_ids;
+        $total_enrolled = count($enrolled_ids);
         $responses = array();
         $completed_responses = array();
         $total_completed = 0;
@@ -442,7 +405,7 @@ class block_chaside extends block_base {
         
         // Header
         echo '<div class="chaside-header text-center mb-3">';
-        echo '<i class="fa fa-chart-line text-success" style="font-size: 1.5em;"></i>';
+        echo $this->get_chaside_icon('4em', '', true);
         echo '<h6 class="mt-2 mb-1 font-weight-bold">' . get_string('management_title', 'block_chaside') . '</h6>';
         echo '<small class="text-muted">' . get_string('course_overview', 'block_chaside') . '</small>';
         echo '</div>';
@@ -462,7 +425,7 @@ class block_chaside extends block_base {
         // Completed tests
         echo '<div class="col-4">';
         echo '<div class="stat-card">';
-        echo '<div class="stat-number text-primary">' . $total_completed . '</div>';
+        echo '<div class="stat-number" style="color: #ffb600;">' . $total_completed . '</div>';
         echo '<div class="stat-label">' . get_string('completed', 'block_chaside') . '</div>';
         echo '</div>';
         echo '</div>';
@@ -481,7 +444,7 @@ class block_chaside extends block_base {
         // Progress bar
         echo '<div class="chaside-progress-overview mb-3">';
         echo '<div class="progress" style="height: 10px;">';
-        echo '<div class="progress-bar bg-success" style="width: ' . ($completion_rate) . '%"></div>';
+        echo '<div class="progress-bar" style="width: ' . ($completion_rate) . '%; background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%);"></div>';
         echo '</div>';
         echo '<small class="text-muted">' . $total_completed . ' ' . get_string('of', 'block_chaside') . ' ' . $total_enrolled . ' ' . get_string('students_completed', 'block_chaside') . '</small>';
         echo '</div>';
@@ -502,405 +465,19 @@ class block_chaside extends block_base {
                 $user = $DB->get_record('user', array('id' => $response->userid));
                 echo '<div class="d-flex justify-content-between align-items-center mb-1">';
                 echo '<span class="small">' . fullname($user) . '</span>';
-                echo '<span class="badge badge-success small">' . userdate($response->timemodified, get_string('strftimedatefullshort')) . '</span>';
+                echo '<span class="badge small" style="background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%); color: #fff;">' . userdate($response->timemodified, get_string('strftimedatefullshort')) . '</span>';
                 echo '</div>';
             }
             echo '</div>';
         }
         
-        
+        // Management actions
+        $url = new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $this->page->course->id]);
+        echo '<div class="chaside-actions text-center mt-3">';
+        echo '<a href="' . $url . '" class="btn btn-sm btn-block" style="background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%); border-color: #ffb600; color: #fff;">';
+        echo '<i class="fa fa-chart-bar"></i> ' . get_string('admin_dashboard_invitation', 'block_chaside');
+        echo '</a>';
         echo '</div>';
-        
-        // Add custom CSS
-        echo '<style>
-        .block_chaside .chaside-management-block {
-            padding: 15px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-        .block_chaside .stat-card {
-            padding: 8px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .block_chaside .stat-number {
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        .block_chaside .stat-label {
-            font-size: 0.75em;
-            color: #6c757d;
-        }
-        .block_chaside .chaside-recent {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #e9ecef;
-        }
-        .block_chaside .chaside-management-block .chaside-actions .btn {
-            box-shadow: 0 2px 4px rgba(0,123,255,0.2);
-        }
-        </style>';
-
-    }
-}
-
-class ChasideFacade {
-    
-    public function get_question_mapping() {
-        // Mapeo oficial del test CHASIDE - INTERESES (70 preguntas) y APTITUDES (28 preguntas)
-        return array(
-            // INTERESES - C: [1, 12, 20, 53, 64, 71, 78, 85, 91, 98]
-            1 => 'C', 12 => 'C', 20 => 'C', 53 => 'C', 64 => 'C', 71 => 'C', 78 => 'C', 85 => 'C', 91 => 'C', 98 => 'C',
-            // INTERESES - H: [9, 25, 34, 41, 56, 67, 74, 80, 89, 95]
-            9 => 'H', 25 => 'H', 34 => 'H', 41 => 'H', 56 => 'H', 67 => 'H', 74 => 'H', 80 => 'H', 89 => 'H', 95 => 'H',
-            // INTERESES - A: [3, 11, 21, 28, 36, 45, 50, 57, 81, 96]
-            3 => 'A', 11 => 'A', 21 => 'A', 28 => 'A', 36 => 'A', 45 => 'A', 50 => 'A', 57 => 'A', 81 => 'A', 96 => 'A',
-            // INTERESES - S: [8, 16, 23, 33, 44, 52, 62, 70, 87, 92]
-            8 => 'S', 16 => 'S', 23 => 'S', 33 => 'S', 44 => 'S', 52 => 'S', 62 => 'S', 70 => 'S', 87 => 'S', 92 => 'S',
-            // INTERESES - I: [6, 19, 27, 38, 47, 54, 60, 75, 83, 97]
-            6 => 'I', 19 => 'I', 27 => 'I', 38 => 'I', 47 => 'I', 54 => 'I', 60 => 'I', 75 => 'I', 83 => 'I', 97 => 'I',
-            // INTERESES - D: [5, 14, 24, 31, 37, 48, 58, 65, 73, 84]
-            5 => 'D', 14 => 'D', 24 => 'D', 31 => 'D', 37 => 'D', 48 => 'D', 58 => 'D', 65 => 'D', 73 => 'D', 84 => 'D',
-            // INTERESES - E: [17, 32, 35, 42, 49, 61, 68, 77, 88, 93]
-            17 => 'E', 32 => 'E', 35 => 'E', 42 => 'E', 49 => 'E', 61 => 'E', 68 => 'E', 77 => 'E', 88 => 'E', 93 => 'E',
-            
-            // APTITUDES - C: [2, 15, 46, 51]
-            2 => 'C', 15 => 'C', 46 => 'C', 51 => 'C',
-            // APTITUDES - H: [30, 63, 72, 86]
-            30 => 'H', 63 => 'H', 72 => 'H', 86 => 'H',
-            // APTITUDES - A: [22, 39, 76, 82]
-            22 => 'A', 39 => 'A', 76 => 'A', 82 => 'A',
-            // APTITUDES - S: [4, 29, 40, 69]
-            4 => 'S', 29 => 'S', 40 => 'S', 69 => 'S',
-            // APTITUDES - I: [10, 26, 59, 90]
-            10 => 'I', 26 => 'I', 59 => 'I', 90 => 'I',
-            // APTITUDES - D: [13, 18, 43, 66]
-            13 => 'D', 18 => 'D', 43 => 'D', 66 => 'D',
-            // APTITUDES - E: [7, 55, 79, 94]
-            7 => 'E', 55 => 'E', 79 => 'E', 94 => 'E'
-        );
-    }
-    
-    public function calculate_scores($responses) {
-        $mapping = $this->get_question_mapping();
-        $scores = array('C' => 0, 'H' => 0, 'A' => 0, 'S' => 0, 'I' => 0, 'D' => 0, 'E' => 0);
-        
-        for ($i = 1; $i <= 98; $i++) {
-            if (isset($responses["q{$i}"]) && $responses["q{$i}"] == 1) {
-                $area = $mapping[$i];
-                $scores[$area]++;
-            }
-        }
-        
-        return $scores;
-    }
-    
-    public function get_top_areas($scores, $limit = 7) {
-        arsort($scores);
-        $top_areas = array();
-        $count = 0;
-        foreach ($scores as $area => $score) {
-            if ($count >= $limit) break;
-            $top_areas[] = array('area' => $area, 'score' => $score);
-            $count++;
-        }
-        return $top_areas;
-    }
-    
-    public function get_area_descriptions() {
-        return array(
-            'C' => get_string('desc_c', 'block_chaside'),
-            'H' => get_string('desc_h', 'block_chaside'),
-            'A' => get_string('desc_a', 'block_chaside'),
-            'S' => get_string('desc_s', 'block_chaside'),
-            'I' => get_string('desc_i', 'block_chaside'),
-            'D' => get_string('desc_d', 'block_chaside'),
-            'E' => get_string('desc_e', 'block_chaside')
-        );
-    }
-    
-    /**
-     * Calculate detailed scores separating interests and aptitudes
-     */
-    public function calculate_detailed_scores($responses) {
-        $mapping = $this->get_question_mapping();
-        
-        // Initialize scores
-        $scores = array();
-        foreach (['C', 'H', 'A', 'S', 'I', 'D', 'E'] as $area) {
-            $scores[$area] = array(
-                'interes_score' => 0,
-                'aptitud_score' => 0
-            );
-        }
-        
-        // Interest questions (70 total)
-        $interest_questions = array(
-            'C' => [1, 12, 20, 53, 64, 71, 78, 85, 91, 98],
-            'H' => [9, 25, 34, 41, 56, 67, 74, 80, 89, 95],
-            'A' => [3, 11, 21, 28, 36, 45, 50, 57, 81, 96],
-            'S' => [8, 16, 23, 33, 44, 52, 62, 70, 87, 92],
-            'I' => [6, 19, 27, 38, 47, 54, 60, 75, 83, 97],
-            'D' => [5, 14, 24, 31, 37, 48, 58, 65, 73, 84],
-            'E' => [17, 32, 35, 42, 49, 61, 68, 77, 88, 93]
-        );
-        
-        // Aptitude questions (28 total)
-        $aptitude_questions = array(
-            'C' => [2, 15, 46, 51],
-            'H' => [30, 63, 72, 86],
-            'A' => [22, 39, 76, 82],
-            'S' => [4, 29, 40, 69],
-            'I' => [10, 26, 59, 90],
-            'D' => [13, 18, 43, 66],
-            'E' => [7, 55, 79, 94]
-        );
-        
-        // Count interest scores
-        foreach ($interest_questions as $area => $questions) {
-            foreach ($questions as $q) {
-                if (isset($responses["q{$q}"]) && $responses["q{$q}"] == 1) {
-                    $scores[$area]['interes_score']++;
-                }
-            }
-        }
-        
-        // Count aptitude scores
-        foreach ($aptitude_questions as $area => $questions) {
-            foreach ($questions as $q) {
-                if (isset($responses["q{$q}"]) && $responses["q{$q}"] == 1) {
-                    $scores[$area]['aptitud_score']++;
-                }
-            }
-        }
-        
-        return $scores;
-    }
-    
-    /**
-     * Calculate percentages for interests, aptitudes and total
-     */
-    public function calculate_percentages($scores) {
-        $percentages = array();
-        
-        foreach ($scores as $area => $area_scores) {
-            $total_score = $area_scores['interes_score'] + $area_scores['aptitud_score'];
-            
-            $percentages[$area] = array(
-                'pct_interes' => round(100 * $area_scores['interes_score'] / 10, 1), // Max 10 interest questions per area
-                'pct_aptitud' => round(100 * $area_scores['aptitud_score'] / 4, 1),   // Max 4 aptitude questions per area
-                'pct_total' => round(100 * $total_score / 14, 1)                      // Max 14 total per area
-            );
-        }
-        
-        return $percentages;
-    }
-    
-    /**
-     * Determine levels based on total percentage
-     */
-    public function determine_levels($percentages) {
-        $levels = array();
-        
-        foreach ($percentages as $area => $pcts) {
-            $pct_total = $pcts['pct_total'];
-            
-            if ($pct_total >= 80.0) {
-                $levels[$area] = 'level_alto';
-            } elseif ($pct_total >= 60.0) {
-                $levels[$area] = 'level_medio';
-            } elseif ($pct_total >= 40.0) {
-                $levels[$area] = 'level_emergente';
-            } else {
-                $levels[$area] = 'level_bajo';
-            }
-        }
-        
-        return $levels;
-    }
-    
-    /**
-     * Detect interest-aptitude gaps
-     */
-    public function detect_gaps($percentages) {
-        $gaps = array();
-        $threshold = 20.0; // 20 percentage points
-        
-        foreach ($percentages as $area => $pcts) {
-            $diff = $pcts['pct_interes'] - $pcts['pct_aptitud'];
-            
-            if ($diff >= $threshold) {
-                $gaps[$area] = 'gap_interest_higher';
-            } elseif ($diff <= -$threshold) {
-                $gaps[$area] = 'gap_aptitude_higher';
-            } else {
-                $gaps[$area] = 'gap_balanced';
-            }
-        }
-        
-        return $gaps;
-    }
-    
-    /**
-     * Get top areas with official CHASIDE tiebreaker rules
-     */
-    public function get_top_areas_v2($scores, $limit = 2) {
-        $areas_with_totals = array();
-        
-        foreach ($scores as $area => $area_scores) {
-            $total = $area_scores['interes_score'] + $area_scores['aptitud_score'];
-            $areas_with_totals[] = array(
-                'area' => $area,
-                'total_score' => $total,
-                'interes_score' => $area_scores['interes_score'],
-                'aptitud_score' => $area_scores['aptitud_score'],
-                'gap' => abs($area_scores['interes_score'] - $area_scores['aptitud_score'])
-            );
-        }
-        
-        // Sort with tiebreaker rules:
-        // 1. Higher total_score
-        // 2. Higher aptitud_score
-        // 3. Lower gap (|interes - aptitud|)
-        // 4. Alphabetical by area
-        usort($areas_with_totals, function($a, $b) {
-            if ($a['total_score'] != $b['total_score']) {
-                return $b['total_score'] - $a['total_score'];
-            }
-            if ($a['aptitud_score'] != $b['aptitud_score']) {
-                return $b['aptitud_score'] - $a['aptitud_score'];
-            }
-            if ($a['gap'] != $b['gap']) {
-                return $a['gap'] - $b['gap'];
-            }
-            return strcmp($a['area'], $b['area']);
-        });
-        
-        return array_slice($areas_with_totals, 0, $limit);
-    }
-    
-    /**
-     * Generate complete results JSON according to official CHASIDE format
-     */
-    public function generate_results_json($responses, $meta = array()) {
-        // Calculate detailed scores
-        $detailed_scores = $this->calculate_detailed_scores($responses);
-        $percentages = $this->calculate_percentages($detailed_scores);
-        $levels = $this->determine_levels($percentages);
-        $gaps = $this->detect_gaps($percentages);
-        $top_areas = $this->get_top_areas_v2($detailed_scores, 2);
-        
-        // Area labels
-        $labels = array(
-            'C' => get_string('area_c', 'block_chaside'),
-            'H' => get_string('area_h', 'block_chaside'),
-            'A' => get_string('area_a', 'block_chaside'),
-            'S' => get_string('area_s', 'block_chaside'),
-            'I' => get_string('area_i', 'block_chaside'),
-            'D' => get_string('area_d', 'block_chaside'),
-            'E' => get_string('area_e', 'block_chaside')
-        );
-        
-        // Build executive summary
-        $top1 = !empty($top_areas) ? $top_areas[0] : null;
-        $top2 = count($top_areas) > 1 ? $top_areas[1] : null;
-        
-        $quick_reading = '';
-        $gap_alerts = array();
-        
-        if ($top1) {
-            $quick_reading = get_string('highest_strength_in', 'block_chaside') . " " . $labels[$top1['area']];
-            if ($top2) {
-                $quick_reading .= " y " . $labels[$top2['area']];
-            }
-        }
-        
-        // Detect significant gaps for alerts
-        foreach ($gaps as $area => $gap_type) {
-            if ($gap_type != 'gap_balanced') {
-                $gap_alerts[] = array(
-                    'area' => $area,
-                    'tipo' => get_string($gap_type, 'block_chaside')
-                );
-            }
-        }
-        
-        // Build main table
-        $main_table = array();
-        foreach (['C', 'H', 'A', 'S', 'I', 'D', 'E'] as $area) {
-            $main_table[] = array(
-                'area' => $area,
-                'label' => $labels[$area],
-                'interes' => array(
-                    'score' => $detailed_scores[$area]['interes_score'],
-                    'pct' => $percentages[$area]['pct_interes']
-                ),
-                'aptitud' => array(
-                    'score' => $detailed_scores[$area]['aptitud_score'],
-                    'pct' => $percentages[$area]['pct_aptitud']
-                ),
-                'total' => array(
-                    'score' => $detailed_scores[$area]['interes_score'] + $detailed_scores[$area]['aptitud_score'],
-                    'pct' => $percentages[$area]['pct_total']
-                ),
-                'nivel' => get_string($levels[$area], 'block_chaside'),
-                'brecha' => get_string($gaps[$area], 'block_chaside'),
-                'interpretacion_breve' => get_string('desc_' . strtolower($area), 'block_chaside')
-            );
-        }
-        
-        // Generate recommendations
-        $recommendations = array(
-            get_string('rec_prioritize_top', 'block_chaside')
-        );
-        
-        if (!empty($gap_alerts)) {
-            foreach ($gap_alerts as $alert) {
-                if ($alert['tipo'] == get_string('gap_interest_higher', 'block_chaside')) {
-                    $recommendations[] = get_string('rec_interest_higher', 'block_chaside');
-                } elseif ($alert['tipo'] == get_string('gap_aptitude_higher', 'block_chaside')) {
-                    $recommendations[] = get_string('rec_aptitude_higher', 'block_chaside');
-                }
-            }
-        } else {
-            $recommendations[] = get_string('rec_balanced_development', 'block_chaside');
-        }
-        
-        $recommendations[] = get_string('rec_explore_combinations', 'block_chaside');
-        
-        // Build final result
-        $result = array(
-            'meta' => $meta,
-            'resumen_ejecutivo' => array(
-                'top1' => $top1 ? array(
-                    'area' => $top1['area'],
-                    'label' => $labels[$top1['area']],
-                    'total' => $top1['total_score'],
-                    'pct_total' => $percentages[$top1['area']]['pct_total'],
-                    'i' => $top1['interes_score'],
-                    'a' => $top1['aptitud_score']
-                ) : null,
-                'top2' => $top2 ? array(
-                    'area' => $top2['area'],
-                    'label' => $labels[$top2['area']],
-                    'total' => $top2['total_score'],
-                    'pct_total' => $percentages[$top2['area']]['pct_total'],
-                    'i' => $top2['interes_score'],
-                    'a' => $top2['aptitud_score']
-                ) : null,
-                'lectura_rapida' => $quick_reading,
-                'alertas_brecha' => $gap_alerts
-            ),
-            'tabla_principal' => $main_table,
-            'recomendaciones' => $recommendations,
-            'apendice_opcional' => array(
-                'nota' => get_string('orientation_note', 'block_chaside')
-            )
-        );
-        
-        return $result;
+        echo '</div>';
     }
 }

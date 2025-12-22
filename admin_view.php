@@ -1,5 +1,6 @@
 <?php
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
+require_once(__DIR__ . '/lib.php');
 
 $courseid = optional_param('courseid', 0, PARAM_INT);
 if (!$courseid) {
@@ -87,22 +88,7 @@ if ($action === 'delete' && $userid) {
 
     // Get statistics
     // Get enrolled students in this course
-    $enrolled_students = get_enrolled_users($context, 'block/chaside:take_test', 0, 'u.id, u.firstname, u.lastname');
-    $enrolled_ids = array_keys($enrolled_students);
-
-    // Defensive: ensure only students show in admin tables (exclude report-capable users).
-    $student_ids = array();
-    foreach ($enrolled_ids as $candidateid) {
-        $candidateid = (int)$candidateid;
-        if (is_siteadmin($candidateid)) {
-            continue;
-        }
-        if (has_capability('block/chaside:viewreports', $context, $candidateid) || has_capability('block/chaside:manage_responses', $context, $candidateid)) {
-            continue;
-        }
-        $student_ids[] = $candidateid;
-    }
-    $enrolled_ids = $student_ids;
+    $enrolled_ids = block_chaside_get_student_ids($context);
     
     // Total students in course
     $total_enrolled = count($enrolled_ids);

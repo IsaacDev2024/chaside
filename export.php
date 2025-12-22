@@ -2,7 +2,6 @@
 // This file is part of Moodle - http://moodle.org/
 
 require_once('../../config.php');
-require_once('block_chaside.php');
 
 $courseid = required_param('courseid', PARAM_INT);
 $format = required_param('format', PARAM_ALPHA);
@@ -13,20 +12,25 @@ $context = context_course::instance($courseid);
 require_login($course);
 require_capability('block/chaside:manage_responses', $context);
 
-// Get enrolled students in this course
-$enrolled_users = get_enrolled_users($context, '', 0, 'u.id', null, 0, 0, true);
+$currentgroup = optional_param('group', 0, PARAM_INT);
 
-// Filtrar solo estudiantes (rol 5)
-$enrolled_ids = array();
-foreach ($enrolled_users as $user) {
-    $roles = get_user_roles($context, $user->id);
-    foreach ($roles as $role) {
-        if ($role->roleid == 5) { // 5 = student
-            $enrolled_ids[] = $user->id;
-            break;
-        }
+// Get enrolled students in this course
+$enrolled_users = get_enrolled_users($context, 'block/chaside:take_test', $currentgroup, 'u.id');
+$enrolled_ids = array_keys($enrolled_users);
+
+// Defensive: exclude any teacher/manager-type user even if misconfigured.
+$student_ids = array();
+foreach ($enrolled_ids as $candidateid) {
+    $candidateid = (int)$candidateid;
+    if (is_siteadmin($candidateid)) {
+        continue;
     }
+    if (has_capability('block/chaside:viewreports', $context, $candidateid) || has_capability('block/chaside:manage_responses', $context, $candidateid)) {
+        continue;
+    }
+    $student_ids[] = $candidateid;
 }
+$enrolled_ids = $student_ids;
 
 // Get all completed responses for enrolled students only
 $responses = array();
@@ -44,11 +48,11 @@ if (!empty($enrolled_ids)) {
 }
 
 if (empty($responses)) {
-    redirect(new moodle_url('/blocks/chaside/manage.php', array('courseid' => $courseid)), 
+    redirect(new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid)), 
              get_string('no_responses_yet', 'block_chaside'), null, 'error');
 }
 
-$facade = new ChasideFacade();
+$facade = new \block_chaside\facade();
 $export_data = array();
 
 foreach ($responses as $response) {
@@ -57,10 +61,12 @@ foreach ($responses as $response) {
     
     try {
         $scores = $facade->calculate_scores($response_array);
-        $top_areas = $facade->get_top_areas($scores, 3);
+        $detailed_scores = $facade->calculate_detailed_scores($response_array);
+        $top_areas = $facade->get_top_areas_v2($detailed_scores, 3);
     } catch (Exception $e) {
         // If calculation fails, use empty arrays
         $scores = array('C' => '', 'H' => '', 'A' => '', 'S' => '', 'I' => '', 'D' => '', 'E' => '');
+        $detailed_scores = array('C' => array('interes_score' => '', 'aptitud_score' => ''), 'H' => array('interes_score' => '', 'aptitud_score' => ''), 'A' => array('interes_score' => '', 'aptitud_score' => ''), 'S' => array('interes_score' => '', 'aptitud_score' => ''), 'I' => array('interes_score' => '', 'aptitud_score' => ''), 'D' => array('interes_score' => '', 'aptitud_score' => ''), 'E' => array('interes_score' => '', 'aptitud_score' => ''));
         $top_areas = array();
     }
     
@@ -69,28 +75,43 @@ foreach ($responses as $response) {
         return isset($scores[$key]) ? $scores[$key] : '';
     };
     
+    $get_detailed = function($area, $type) use ($detailed_scores) {
+        return isset($detailed_scores[$area][$type]) ? $detailed_scores[$area][$type] : '';
+    };
+    
     $export_data[] = array(
         'student_id' => $response->idnumber,
         'student_name' => $response->firstname . ' ' . $response->lastname,
         'student_email' => $response->email,
         'completion_date' => date('Y-m-d H:i:s', $response->timemodified),
         'administrative_score' => $get_score('C'),
+        'administrative_interests' => $get_detailed('C', 'interes_score'),
+        'administrative_aptitudes' => $get_detailed('C', 'aptitud_score'),
         'humanities_score' => $get_score('H'),
+        'humanities_interests' => $get_detailed('H', 'interes_score'),
+        'humanities_aptitudes' => $get_detailed('H', 'aptitud_score'),
         'artistic_score' => $get_score('A'),
+        'artistic_interests' => $get_detailed('A', 'interes_score'),
+        'artistic_aptitudes' => $get_detailed('A', 'aptitud_score'),
         'health_sciences_score' => $get_score('S'),
+        'health_sciences_interests' => $get_detailed('S', 'interes_score'),
+        'health_sciences_aptitudes' => $get_detailed('S', 'aptitud_score'),
         'technical_score' => $get_score('I'),
+        'technical_interests' => $get_detailed('I', 'interes_score'),
+        'technical_aptitudes' => $get_detailed('I', 'aptitud_score'),
         'defense_security_score' => $get_score('D'),
+        'defense_security_interests' => $get_detailed('D', 'interes_score'),
+        'defense_security_aptitudes' => $get_detailed('D', 'aptitud_score'),
         'experimental_sciences_score' => $get_score('E'),
+        'experimental_sciences_interests' => $get_detailed('E', 'interes_score'),
+        'experimental_sciences_aptitudes' => $get_detailed('E', 'aptitud_score'),
         'top_area_1' => isset($top_areas[0]) ? $top_areas[0]['area'] : '',
-        'top_area_1_score' => isset($top_areas[0]) ? $top_areas[0]['score'] : '',
         'top_area_2' => isset($top_areas[1]) ? $top_areas[1]['area'] : '',
-        'top_area_2_score' => isset($top_areas[1]) ? $top_areas[1]['score'] : '',
-        'top_area_3' => isset($top_areas[2]) ? $top_areas[2]['area'] : '',
-        'top_area_3_score' => isset($top_areas[2]) ? $top_areas[2]['score'] : ''
+        'top_area_3' => isset($top_areas[2]) ? $top_areas[2]['area'] : ''
     );
 }
 
-// Generar nombre elegante del archivo usando string de idioma
+// Generate elegant filename using language string
 $course_name = preg_replace('/[^a-z0-9]/i', '_', strtolower($course->shortname));
 $date_str = date('Y-m-d');
 $filename = get_string('export_filename', 'block_chaside') . '_' . $course_name . '_' . $date_str;
@@ -111,18 +132,29 @@ if ($format == 'csv') {
         get_string('export_student_email', 'block_chaside'),
         get_string('export_completion_date', 'block_chaside'),
         get_string('export_administrative_score', 'block_chaside'),
+        get_string('export_administrative_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_administrative_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_humanities_score', 'block_chaside'),
+        get_string('export_humanities_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_humanities_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_artistic_score', 'block_chaside'),
+        get_string('export_artistic_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_artistic_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_health_sciences_score', 'block_chaside'),
+        get_string('export_health_sciences_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_health_sciences_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_technical_score', 'block_chaside'),
+        get_string('export_technical_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_technical_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_defense_security_score', 'block_chaside'),
+        get_string('export_defense_security_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_defense_security_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_experimental_sciences_score', 'block_chaside'),
+        get_string('export_experimental_sciences_score', 'block_chaside') . ' - ' . get_string('interests', 'block_chaside'),
+        get_string('export_experimental_sciences_score', 'block_chaside') . ' - ' . get_string('aptitudes', 'block_chaside'),
         get_string('export_top_area', 'block_chaside') . ' 1',
-        get_string('export_top_area', 'block_chaside') . ' 1 ' . get_string('export_score', 'block_chaside'),
         get_string('export_top_area', 'block_chaside') . ' 2', 
-        get_string('export_top_area', 'block_chaside') . ' 2 ' . get_string('export_score', 'block_chaside'),
-        get_string('export_top_area', 'block_chaside') . ' 3',
-        get_string('export_top_area', 'block_chaside') . ' 3 ' . get_string('export_score', 'block_chaside')
+        get_string('export_top_area', 'block_chaside') . ' 3'
     );
     fputcsv($fp, $headers);
     

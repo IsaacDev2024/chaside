@@ -5,6 +5,16 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2025-12-22
+- Renovación completa y moderna de la UI/UX del bloque, test, panel de administración y vistas individuales (Todas con diseño responsivo).
+- Mejora en la experiencia/flujo de usuario (Profesores y Estudiantes).
+- Guardado automático de respuestas y progreso.
+- Uso de logos institucionales y paleta de colores oficial.
+- Soporte para múltiples idiomas (Español e Inglés).
+- Consistencia con los otros bloques (learning_style, personality_test y tmms_24).
+- Seguridad mejorada.
+- Optimización del rendimiento.
+- Corrección de errores menores.
 
 ## [1.6.7] - 2025-10-13
 

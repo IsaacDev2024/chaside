@@ -5,13 +5,25 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] — 2026-01-08
+
+### Agregado
+- Paginación en la lista de estudiantes en el panel de administración.
+
+### Cambiado
+- Uso de arquitectura de plantillas Mustache para todas las vistas del bloque.
+- Refactorización completa del código para separar lógica de presentación.
+- Mejora en la mantenibilidad y escalabilidad del código.
+- Optimización del rendimiento en búsquedas.
+- Pequeñas mejoras de seguridad.
+
 ## [2.0.0] — 2025-12-22
 
-### Added
+### Agregado
 - **Soporte multiidioma:** Implementación de internacionalización para Español e Inglés.
 - **Guardado automático:** Sistema de persistencia de respuestas y progreso en tiempo real.
 
-### Changed
+### Cambiado
 - **Rediseño UI/UX:** Renovación completa y moderna de la interfaz del bloque, test, panel de administración y vistas individuales.
 - **Diseño Responsivo:** Optimización de todas las interfaces para dispositivos móviles y tablets.
 - **Flujo de usuario:** Mejora en la experiencia de navegación para perfiles de profesor y estudiante.
@@ -19,10 +31,10 @@ y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Estandarización:** Consistencia visual y funcional con los bloques `learning_style`, `personality_test` y `tmms_24`.
 - **Rendimiento:** Optimización de la carga de recursos y ejecución de scripts.
 
-### Fixed
+### Corregido
 - Corrección de errores menores detectados en versiones previas.
 
-### Security
+### Seguridad
 - Implementación de mejoras de seguridad en el manejo de datos y acceso.
 
 ## [1.6.7] - 2025-10-13

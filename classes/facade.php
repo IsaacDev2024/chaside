@@ -1,4 +1,13 @@
 <?php
+/**
+ * CHASIDE Facade
+ *
+ * @package    block_chaside
+ * @copyright  2026 SAVIO - Sistema de Aprendizaje Virtual Interactivo (UTB)
+ * @author     SAVIO Development Team
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace block_chaside;
 
 defined('MOODLE_INTERNAL') || die();
@@ -262,6 +271,28 @@ class facade {
         // Build main table
         $main_table = array();
         foreach (['C', 'H', 'A', 'S', 'I', 'D', 'E'] as $area) {
+            
+            // Logic for interpretation
+            $level_key = $levels[$area]; // level_alto, level_medio, level_emergente, level_bajo
+            $gap_key = $gaps[$area];     // gap_interest_higher, gap_aptitude_higher, gap_balanced
+            
+            $interpretation_key = 'interpretation_' . strtolower($area) . '_low'; // Default to low logic
+            
+            if ($level_key !== 'level_bajo') {
+                $suffix_level = '';
+                if ($level_key === 'level_alto') $suffix_level = 'high';
+                elseif ($level_key === 'level_medio') $suffix_level = 'medium';
+                elseif ($level_key === 'level_emergente') $suffix_level = 'emerging';
+                
+                $suffix_gap = 'balanced';
+                if ($gap_key === 'gap_interest_higher') $suffix_gap = 'interest';
+                elseif ($gap_key === 'gap_aptitude_higher') $suffix_gap = 'aptitude';
+                
+                $interpretation_key = 'interpretation_' . strtolower($area) . '_' . $suffix_level . '_' . $suffix_gap;
+            } else {
+                 $interpretation_key = 'interpretation_' . strtolower($area) . '_low';
+            }
+
             $main_table[] = array(
                 'area' => $area,
                 'label' => $labels[$area],
@@ -279,7 +310,7 @@ class facade {
                 ),
                 'nivel' => get_string($levels[$area], 'block_chaside'),
                 'brecha' => get_string($gaps[$area], 'block_chaside'),
-                'interpretacion_breve' => get_string('desc_' . strtolower($area), 'block_chaside')
+                'interpretacion_breve' => get_string($interpretation_key, 'block_chaside')
             );
         }
         

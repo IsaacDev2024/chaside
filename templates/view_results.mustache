@@ -1,0 +1,210 @@
+{{! 
+    @template block_chaside/view_results 
+    Results page for the CHASIDE test.
+}}
+{{#is_completed}}
+    <div class="chaside-results-page">
+        <div class="container-fluid chaside-results-container">
+            
+            <div class="chaside-results-hero mb-4">
+                <h2 class="chaside-page-title">{{title}}</h2>
+                {{#meta}}
+                <div class="chaside-page-meta">
+                    {{completion_date_label}} {{fecha_aplicacion}}
+                </div>
+                {{/meta}}
+            </div>
+
+                {{! Executive Summary }}
+                <div class="chaside-executive-summary mb-4">
+                    <h3 class="chaside-section-title">{{str_executive_summary}}</h3>
+                    
+                    <div class="row mb-3">
+                        {{#top1}}
+                        <div class="col-md-6 mb-3">
+                            <div class="card chaside-card border-chaside-primary">
+                                <div class="bg-chaside-primary card-header text-white">
+                                    <h4 class="mb-0">🥇 {{str_your_top_area}}</h4>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{label}}</h5>
+                                    <p class="card-text">{{str_total_score}}: {{total}}/14 ({{pct_total}}%)</p>
+                                    <p class="card-text small text-muted">{{str_interests}}: {{i}}/10 | {{str_aptitudes}}: {{a}}/4</p>
+                                    
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar bg-chaside-primary" style="width: {{pct_total}}%;" role="progressbar">
+                                            {{pct_total}}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{/top1}}
+
+                        {{#top2}}
+                        <div class="col-md-6 mb-3">
+                            <div class="card chaside-card border-chaside-secondary">
+                                <div class="card-header bg-chaside-secondary text-white">
+                                    <h4 class="mb-0">🥈 {{str_second_top_area}}</h4>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title">{{label}}</h5>
+                                    <p class="card-text">{{str_total_score}}: {{total}}/14 ({{pct_total}}%)</p>
+                                    <p class="card-text small text-muted">{{str_interests}}: {{i}}/10 | {{str_aptitudes}}: {{a}}/4</p>
+                                    
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar bg-chaside-secondary" style="width: {{pct_total}}%;" role="progressbar">
+                                            {{pct_total}}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{/top2}}
+                    </div>
+
+                    {{#has_gap_alerts}}
+                    <div class="chaside-gap-alerts mb-3">
+                        <div class="card chaside-card border-chaside-primary">
+                            <div class="card-header chaside-card-header-soft">
+                                <h5 class="mb-0"><i class="fa fa-exclamation-triangle mr-2"></i> {{str_gap_alerts}}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chaside-gap-grid">
+                                    {{#gap_alerts}}
+                                    <div class="chaside-gap-chip">
+                                        <div class="chaside-gap-chip-title">{{area_name}}</div>
+                                        <div class="chaside-gap-chip-subtitle">{{tipo}}</div>
+                                    </div>
+                                    {{/gap_alerts}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/has_gap_alerts}}
+                </div>
+
+                {{! Detailed Table }}
+                <div class="chaside-detailed-table mb-4">
+                    <h3 class="chaside-section-title">{{str_detailed_table}}</h3>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{str_area_label}}</th>
+                                    <th scope="col">{{str_interests}} (0-10)</th>
+                                    <th scope="col">{{str_aptitudes}} (0-4)</th>
+                                    <th scope="col">{{str_total}} (0-14)</th>
+                                    <th scope="col">{{str_level}}</th>
+                                    <th scope="col">{{str_gap}}</th>
+                                    <th scope="col">{{str_interpretation}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#tabla_principal}}
+                                <tr class="{{row_class}}" style="{{row_style}}">
+                                    <td><strong>{{label}}</strong></td>
+                                    <td>{{interes.score}} ({{interes.pct}}%)</td>
+                                    <td>{{aptitud.score}} ({{aptitud.pct}}%)</td>
+                                    <td><strong>{{total.score}} ({{total.pct}}%)</strong></td>
+                                    <td><span class="badge {{level_class}}">{{nivel}}</span></td>
+                                    <td><span class="badge {{gap_class}}">{{brecha}}</span></td>
+                                    <td><small>{{interpretacion_breve}}</small></td>
+                                </tr>
+                                {{/tabla_principal}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{! Recommendations }}
+                <div class="chaside-recommendations mb-4">
+                    <h3 class="chaside-section-title">{{str_recommendations}}</h3>
+                    
+                    {{#has_recommendations}}
+                    <div class="alert alert-info chaside-recommendations-list">
+                        <ul class="mb-0">
+                            {{#recomendaciones}}
+                            <li>{{.}}</li>
+                            {{/recomendaciones}}
+                        </ul>
+                    </div>
+                    {{/has_recommendations}}
+                </div>
+
+                {{! Visual Chart }}
+                <div class="chaside-visual-chart mb-4">
+                    <h3 class="chaside-section-title">{{str_scores_chart_title}}</h3>
+                    
+                    {{#chart_data}}
+                    <div class="score-item mb-3">
+                        <label class="score-label">{{label}}: {{score}}/14 ({{pct}}%)</label>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar text-dark" role="progressbar" style="width: {{pct}}%; background-color: {{color}};" aria-valuenow="{{pct}}" aria-valuemin="0" aria-valuemax="100">
+                                {{pct}}%
+                            </div>
+                        </div>
+                    </div>
+                    {{/chart_data}}
+                </div>
+
+                {{! Guidance Note }}
+                <div class="chaside-guidance mb-4">
+                    <h4 class="chaside-section-title">{{str_guidance_note}}</h4>
+                    <p class="mb-0">{{note}}</p>
+                </div>
+
+                {{! Navigation }}
+                <div class="mt-5 text-center d-flex gap-3 justify-content-center">
+                    {{#can_view_reports}}
+                    <a href="{{admin_url}}" class="btn btn-secondary btn-modern mr-3">
+                        <i class="fa fa-arrow-left mr-2"></i>{{str_back_to_admin}}
+                    </a>
+                    {{/can_view_reports}}
+                    <a href="{{course_url}}" class="btn btn-modern" style="background: linear-gradient(135deg, #ffd966 0%, #ffb600 100%); border: none; color: white;">
+                        <i class="fa fa-home mr-2"></i>{{str_back_to_course}}
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    {{/is_completed}}
+
+    {{^is_completed}}
+        {{! In Progress State }}
+        <div class="container-fluid">
+            <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading"><i class="fa fa-clock-o"></i> {{str_test_in_progress}}</h4>
+                <p>{{str_test_in_progress_message}}</p>
+                <hr>
+                <p class="mb-1"><strong>{{str_progress_label}}:</strong></p>
+                <div class="progress mb-2" style="height: 30px;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{progress_percentage}}%" aria-valuenow="{{progress_percentage}}" aria-valuemin="0" aria-valuemax="100">
+                        <strong>{{progress_percentage}}%</strong>
+                    </div>
+                </div>
+                <p><strong>{{str_has_answered}}:</strong> {{answered}}/{{total_questions}} {{str_questions}}</p>
+                
+                {{#all_answered}}
+                <div class="alert alert-info mt-2" role="alert">
+                    <i class="fa fa-info-circle"></i> 
+                    <strong>{{str_remind_submit_test}}</strong>
+                </div>
+                {{/all_answered}}
+                
+                <p class="mb-0"><em>{{str_results_available_when_complete}}</em></p>
+            </div>
+            
+            <div class="mt-5 text-center d-flex gap-3 justify-content-center">
+                {{#can_view_reports}}
+                <a href="{{admin_url}}" class="btn btn-secondary btn-modern mr-3">
+                    <i class="fa fa-arrow-left mr-2"></i>{{str_back_to_admin}}
+                </a>
+                {{/can_view_reports}}
+                <a href="{{course_url}}" class="btn btn-modern" style="background: linear-gradient(135deg, #ffd966 0%, #ffb600 100%); border: none; color: white;">
+                    <i class="fa fa-home mr-2"></i>{{str_back_to_course}}
+                </a>
+            </div>
+        </div>
+    {{/is_completed}}

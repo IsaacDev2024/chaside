@@ -1,4 +1,12 @@
 <?php
+/**
+ * CHASIDE Block Library Functions
+ *
+ * @package    block_chaside
+ * @copyright  2026 SAVIO - Sistema de Aprendizaje Virtual Interactivo (UTB)
+ * @author     SAVIO Development Team
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 defined('MOODLE_INTERNAL') || die();
 

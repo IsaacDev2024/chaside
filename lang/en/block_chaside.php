@@ -1,6 +1,4 @@
 <?php
-defined('MOODLE_INTERNAL') || die();
-
 // Block name and settings
 $string['pluginname'] = 'Vocational Guidance Exploration';
 $string['chaside'] = 'CHASIDE';
@@ -217,7 +215,7 @@ $string['no_participants_message'] = 'No students have started the test yet.';
 $string['top_areas_distribution'] = 'Top Areas Distribution';
 $string['primary_area_title'] = 'Primary Area (Top 1) - What do most students choose?';
 $string['secondary_area_title'] = 'Secondary Interest (Top 2) - The second strongest option';
-$string['search_student'] = 'Search student...';
+$string['search_student'] = 'Search student or email...';
 $string['top_area'] = 'Top Area';
 $string['in_progress_status'] = 'In Progress';
 $string['view'] = 'View';
@@ -287,12 +285,85 @@ $string['detailed_table'] = 'Detailed Table by Area';
 $string['recommendations'] = 'Recommendations';
 $string['guidance_note'] = 'Guidance Note';
 
+// Interpretations per area
+$string['interpretation_c_high_balanced'] = 'Outstanding profile with strengths in organization, leadership, and numerical handling; your interest fully supports your management capacity.';
+$string['interpretation_c_high_interest'] = 'You have a strong inclination for leadership and organization, but you should strengthen your technical skills in numerical handling.';
+$string['interpretation_c_high_aptitude'] = 'You possess exceptional skills in organization and numerical handling, although your interest in administrative leadership is moderate.';
+$string['interpretation_c_medium_balanced'] = 'Solid profile in organization and numerical handling; you show a balance between your drive to lead and your current abilities.';
+$string['interpretation_c_medium_interest'] = 'You are motivated by administration, but you require more practice in organizational and leadership tasks.';
+$string['interpretation_c_medium_aptitude'] = 'You are skilled in organization and numerical handling, though your personal motivation for leadership is still moderate.';
+$string['interpretation_c_emerging_balanced'] = 'Developing profile; you are beginning to show aptitudes for organization and numerical data management.';
+$string['interpretation_c_emerging_interest'] = 'You are attracted to leadership and organization, but you need to work on grounding your numerical handling abilities.';
+$string['interpretation_c_emerging_aptitude'] = 'You have a natural ease for order and numbers, though your interest in administrative management is in its initial stages.';
+$string['interpretation_c_low'] = 'Low affinity for tasks requiring administrative organization, constant leadership, or intensive numerical handling.';
+$string['interpretation_h_high_balanced'] = 'Outstanding profile with a great interest in language and justice; your social analysis capacity is excellent and balanced.';
+$string['interpretation_h_high_interest'] = 'You feel a strong drive for justice and social causes, but you must strengthen your language and argumentation skills.';
+$string['interpretation_h_high_aptitude'] = 'You possess a natural talent for social analysis and language, although your interest in the legal field is moderate.';
+$string['interpretation_h_medium_balanced'] = 'Solid profile with good language command and interest in justice; you show a balanced approach toward social analysis.';
+$string['interpretation_h_medium_interest'] = 'You are motivated by social analysis and justice, though you require improving your expressive and language skills.';
+$string['interpretation_h_medium_aptitude'] = 'You are skilled at social analysis and language, although your motivation for legal causes is moderate.';
+$string['interpretation_h_emerging_balanced'] = 'Developing profile; you are beginning to connect an interest in justice with your social analysis abilities.';
+$string['interpretation_h_emerging_interest'] = 'You show interest in social and justice issues, but you must develop your language and critical comprehension foundations.';
+$string['interpretation_h_emerging_aptitude'] = 'You possess an ease for language and analysis, though your interest in social and justice matters is still incipient.';
+$string['interpretation_h_low'] = 'Preference for areas less focused on complex language, formal justice, or deep social analysis.';
+$string['interpretation_a_high_balanced'] = 'Outstanding creative profile; your aesthetic sensitivity allows you to solve problems innovatively and effectively.';
+$string['interpretation_a_high_interest'] = 'You possess great aesthetic sensitivity and a desire to create, but you must work on technique to solve creative problems.';
+$string['interpretation_a_high_aptitude'] = 'You have superior creative and aesthetic capacity, although your interest in applying it professionally is moderate.';
+$string['interpretation_a_medium_balanced'] = 'Solid creative profile; you show a good balance between your aesthetic sensitivity and your execution capacity.';
+$string['interpretation_a_medium_interest'] = 'You are motivated by creation and aesthetics, though you require more practice in your skills to solve artistic problems.';
+$string['interpretation_a_medium_aptitude'] = 'You show creative ease and sensitivity, although your interest in pursuing the artistic field is moderate.';
+$string['interpretation_a_emerging_balanced'] = 'Developing profile; you are beginning to manifest aesthetic sensitivity and flashes of resolutive creativity.';
+$string['interpretation_a_emerging_interest'] = 'You are attracted to the aesthetic world, but you must develop creative tools to provide real solutions.';
+$string['interpretation_a_emerging_aptitude'] = 'You possess natural creative traits, although your interest in aesthetics is still exploratory.';
+$string['interpretation_a_low'] = 'Your focus is more pragmatic, with less interest in aesthetic sensitivity or creative problem-solving.';
+$string['interpretation_s_high_balanced'] = 'Outstanding profile in service and care; your precision and people-oriented focus define your health vocation.';
+$string['interpretation_s_high_interest'] = 'You feel a strong vocation for service and care, but you must strengthen your technical precision in health topics.';
+$string['interpretation_s_high_aptitude'] = 'You possess great precision and capacity for care, though your interest in direct health service is moderate.';
+$string['interpretation_s_medium_balanced'] = 'Solid profile in service orientation; you show a good balance between technical precision and people care.';
+$string['interpretation_s_medium_interest'] = 'You are motivated by caring for others, though you require more training to reach the precision the area demands.';
+$string['interpretation_s_medium_aptitude'] = 'You show precision and care skills, although your motivation for constant service is moderate.';
+$string['interpretation_s_emerging_balanced'] = 'Developing profile; you are beginning to show traits of precision and an initial orientation toward serving others.';
+$string['interpretation_s_emerging_interest'] = 'You show interest in people care, but you must work on the rigor and precision required in health.';
+$string['interpretation_s_emerging_aptitude'] = 'You have an ease for care and attention, although your vocational interest in health is incipient.';
+$string['interpretation_s_low'] = 'Low predisposition for direct care tasks, high clinical precision, or health service orientation.';
+$string['interpretation_i_high_balanced'] = 'Outstanding profile with superior technical-analytical thinking; your planning capacity is excellent and resolutive.';
+$string['interpretation_i_high_interest'] = 'You feel a great interest in technical matters and planning, though you must strengthen your logical-mathematical analysis foundations.';
+$string['interpretation_i_high_aptitude'] = 'You possess great analytical and planning capacity, although your interest in the technical field is moderate.';
+$string['interpretation_i_medium_balanced'] = 'Solid profile in planning; you show balanced technical thinking and good analytical capacity.';
+$string['interpretation_i_medium_interest'] = 'You are attracted to planning and technology, but you require more practice in your analytical thinking skills.';
+$string['interpretation_i_medium_aptitude'] = 'You are skilled at planning and analyzing problems, although your interest in the technical area is moderate.';
+$string['interpretation_i_emerging_balanced'] = 'Developing profile; you are beginning to manifest planning skills and initial technical thinking.';
+$string['interpretation_i_emerging_interest'] = 'You are interested in the technical world, but you must develop more analytical logic and planning capacity.';
+$string['interpretation_i_emerging_aptitude'] = 'You possess a foundation of analytical thinking, although your interest in technical planning is just waking up.';
+$string['interpretation_i_low'] = 'Preference for areas with lower demand for technical-analytical thinking or systematic planning.';
+$string['interpretation_d_high_balanced'] = 'Outstanding profile with high discipline; your perseverance and teamwork skills are exceptional.';
+$string['interpretation_d_high_interest'] = 'You highly value discipline and teamwork, but you must strengthen your perseverance in high-demand tasks.';
+$string['interpretation_d_high_aptitude'] = 'You possess great discipline and teamwork capacity, although your interest in this area is moderate.';
+$string['interpretation_d_medium_balanced'] = 'Solid profile in discipline; you show a balance between personal perseverance and collaborative work.';
+$string['interpretation_d_medium_interest'] = 'You are motivated by teamwork and discipline, though you require developing more individual perseverance.';
+$string['interpretation_d_medium_aptitude'] = 'You show yourself to be disciplined and fit for a team, although your motivation for constant perseverance is moderate.';
+$string['interpretation_d_emerging_balanced'] = 'Developing profile; you are beginning to show traits of discipline and an initial orientation toward teamwork.';
+$string['interpretation_d_emerging_interest'] = 'You are attracted to the environment of discipline, but you must work on your perseverance and collaboration capacity.';
+$string['interpretation_d_emerging_aptitude'] = 'You possess firmness and team capacity, although your interest in institutional discipline is incipient.';
+$string['interpretation_d_low'] = 'Low affinity for strict disciplinary regimes, hierarchical teamwork, or high-perseverance tasks.';
+$string['interpretation_e_high_balanced'] = 'Outstanding research profile; your rigorous observation and mastery of the scientific method are excellent.';
+$string['interpretation_e_high_interest'] = 'You feel a passion for research and observation, but you must strengthen rigor in applying the scientific method.';
+$string['interpretation_e_high_aptitude'] = 'You possess great observation capacity and scientific rigor, although your interest in pure research is moderate.';
+$string['interpretation_e_medium_balanced'] = 'Solid profile in observation; you show a balanced approach toward research and the scientific method.';
+$string['interpretation_e_medium_interest'] = 'You are motivated by research, though you require more practice in rigorous observation and the scientific method.';
+$string['interpretation_e_medium_aptitude'] = 'You are skilled at observing and applying the scientific method, although your interest in investigating is moderate.';
+$string['interpretation_e_emerging_balanced'] = 'Developing profile; you are beginning to show rigor in observation and an initial approach to the scientific method.';
+$string['interpretation_e_emerging_interest'] = 'You are attracted to research, but you must develop your rigorous observation foundations and scientific processes.';
+$string['interpretation_e_emerging_aptitude'] = 'You possess analytical observation capacity, although your interest in the scientific method is still incipient.';
+$string['interpretation_e_low'] = 'Your focus is more practical, with less interest in rigorous observation or the scientific method of research.';
+
 // Default recommendations
 $string['rec_prioritize_top'] = 'Prioritize subjects/activities related to your top areas.';
 $string['rec_interest_higher'] = 'If Interest ≫ Aptitude: plan practice and tutoring to close the gap.';
 $string['rec_aptitude_higher'] = 'If Aptitude ≫ Interest: experiment with microprojects to validate motivation.';
 $string['rec_balanced_development'] = 'Develop both interests and aptitudes in a balanced way.';
 $string['rec_explore_combinations'] = 'Explore combinations between your strongest areas.';
+$string['no_results_search'] = 'No name or email contains "{$a}"';
 $string['orientation_note'] = 'This result is indicative; it is recommended to complement with dialogue and practical experiences.';
 
 // Export functionality strings

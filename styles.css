@@ -1,10 +1,9 @@
 /* CHASIDE Block - Consolidated Styles */
-
 /* Prevent chaside icon from floating */
 .block_chaside img.chaside-icon {
-  float: none !important;
-  display: block;
-  margin: 0 auto 10px auto;
+    float: none !important;
+    display: block;
+    margin: 0 auto 10px auto;
 }
 
 /* Results block styles (from block_chaside.php - show_student_results) */
@@ -261,7 +260,6 @@ body#page-blocks-chaside-admin_view table .btn i {
 }
 
 /* Area Progress Bars */
-
 /* Compact average cards (3 per row) */
 .block_chaside_container .chaside-area-avg-card {
     border-left: 4px solid #ffb600 !important;
@@ -340,7 +338,7 @@ body#page-blocks-chaside-admin_view table .btn i {
 }
 
 .block_chaside_container .btn {
-    font-weight: 600 !important;
+    font-weight: 500 !important;
 }
 
 .block_chaside_container .table-striped tbody tr:nth-of-type(odd) {
@@ -355,7 +353,6 @@ body#page-blocks-chaside-admin_view table .btn i {
 .block_chaside_container #searchInput {
     border: 1px solid #ced4da !important;
     border-radius: 6px !important;
-    padding: 10px 15px !important;
     font-size: 0.95rem !important;
 }
 
@@ -400,7 +397,6 @@ body#page-blocks-chaside-admin_view table .btn i {
 /* ========================================
    VIEW_RESULTS.PHP STYLES - Results Page
    ======================================== */
-
 /* CHASIDE Results (Modern) */
 body#page-blocks-chaside-view_results {
     --chaside-primary: #ffb600;
@@ -414,7 +410,7 @@ body#page-blocks-chaside-view_results {
 
 .chaside-results-container {
     max-width: 1400px;
-}   
+}
 
 .chaside-results-hero {
     background: linear-gradient(135deg, var(--chaside-surface-soft) 0%, #ffffff 60%) !important;
@@ -447,12 +443,14 @@ body#page-blocks-chaside-view_results {
     letter-spacing: -0.15px;
 }
 
-.bg-chaside-primary {
+.bg-chaside-primary,
+.card-header.bg-chaside-primary {
     background-color: var(--chaside-primary) !important;
 }
 
-.bg-chaside-secondary {
-    background-color: #ffc34d !important;
+.bg-chaside-secondary,
+.card-header.bg-chaside-secondary {
+    background-color: var(--chaside-primary-300) !important;
 }
 
 .border-chaside-primary {
@@ -654,16 +652,16 @@ body#page-blocks-chaside-view_results .chaside-btn-course:hover {
     .btn, .chaside-visual-chart {
         display: none !important;
     }
-    
+
     .table {
         font-size: 0.8rem;
     }
+
 }
 
 /* ========================================
    VIEW.PHP STYLES - Test Form Page
    ======================================== */
-
 /* CHASIDE block colors (yellow/gold) */
 :root {
     --chaside-primary: #ffb600;
@@ -671,12 +669,6 @@ body#page-blocks-chaside-view_results .chaside-btn-course:hover {
     --chaside-primary-darker: #cc9100;
     --chaside-secondary: #ffd966;
     --chaside-light: #fff8e6;
-}
-
-body#page-blocks-chaside-view .question-text {
-    font-weight: 500 !important;
-    color: #212529 !important;
-    line-height: 1.4 !important;
 }
 
 body#page-blocks-chaside-view .card {
@@ -830,22 +822,48 @@ body#page-blocks-chaside-view form button.btn-success:hover {
         flex-direction: column !important;
         width: 100% !important;
     }
-    
+
     body#page-blocks-chaside-view .btn-group label {
         margin-bottom: 5px !important;
         border-radius: 4px !important;
     }
-    
+
     body#page-blocks-chaside-view .col-md-8, 
     body#page-blocks-chaside-view .col-md-4 {
         margin-bottom: 15px !important;
     }
+
 }
 
 body#page-blocks-chaside-view .question-text {
+    font-weight: 500 !important;
+    color: #212529 !important;
+    line-height: 1.4 !important;
     margin-bottom: 0 !important;
 }
 
 body#page-blocks-chaside-view .fa {
     font-size: 0.9em !important;
+}
+
+/* Pagination Styles - Yellow/Orange Theme */
+.block_chaside_container .pagination .page-item .page-link {
+    color: #ffb600;
+    border-color: #dee2e6;
+}
+
+.block_chaside_container .pagination .page-item.active .page-link {
+    background-color: #ffb600;
+    border-color: #ffb600;
+    color: #ffffff;
+}
+
+.block_chaside_container .pagination .page-item .page-link:hover {
+    background-color: #fff8e6;
+    border-color: #dee2e6;
+    color: #cc9100;
+}
+
+.block_chaside_container .pagination .page-item.disabled .page-link {
+    color: #6c757d;
 }

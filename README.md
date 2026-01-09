@@ -90,13 +90,12 @@ Si el estudiante ha completado las 44 preguntas pero aún no ha procesado el env
 Al concluir, el estudiante recibe un diagnóstico de su orientación vocacional. La presentación incluye un resumen ejecutivo con las áreas principales, alertas de brecha, todo acompañado de pequeñas recomendaciones. Por último tiene la opción de ver un resultado detallado con toda la información completa.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/532c2dbf-dc8f-474f-8342-7202c79dc61d" alt="Resultados del Estudiante" width="528">
+  <img src="https://github.com/user-attachments/assets/532c2dbf-dc8f-474f-8342-7202c79dc61d" alt="Resultados del Estudiante - Bloque" width="528">
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/6ec78d3c-c3c8-4a22-afca-60ad9c5f077e" alt="Resultados del Estudiante" width="800">
+  <img src="https://github.com/user-attachments/assets/1c4a2470-b499-4a8d-8107-a8496f2e3f83" alt="Resultados del Estudiante - Page" width="800">
 </p>
-
 
 ### 2. Experiencia del Profesor
 

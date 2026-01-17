@@ -34,6 +34,8 @@ if ($userid != $USER->id && !has_capability('block/chaside:viewreports', $contex
 $PAGE->set_url('/blocks/chaside/view_results.php', array('courseid' => $courseid, 'userid' => $userid));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
+$PAGE->set_title(get_string('individual_results', 'block_chaside'));
+$PAGE->set_heading(get_string('individual_results', 'block_chaside'));
 $PAGE->requires->css('/blocks/chaside/styles.css');
 
 // Obtener los resultados del usuario (en cualquier curso)
@@ -53,16 +55,22 @@ if (!$response) {
     exit;
 }
 
+// Si el test está incompleto y es el propio estudiante, redirigir al curso antes de procesar nada más
+if ($response->is_completed == 0 && $userid == $USER->id) {
+    redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
+}
+
 // Get user information ONCE
 $user = $DB->get_record('user', array('id' => $userid)); 
 
 $pagetitle = ($userid != $USER->id)
     ? get_string('viewing_results_of', 'block_chaside', fullname($user))
-    : get_string('your_results', 'block_chaside');
+    : get_string('your_orientation_results', 'block_chaside');
 $PAGE->set_title($pagetitle);
 
 $template_data = [
     'title' => $pagetitle,
+    'iconurl' => $OUTPUT->image_url('icon', 'block_chaside')->out(false),
     'course_url' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'admin_url' => (new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $courseid]))->out(false),
     'can_view_reports' => has_capability('block/chaside:viewreports', $context),
@@ -111,7 +119,6 @@ $meta = array(
     'nombre' => fullname($user),
     'curso' => $course->shortname,
     'fecha_aplicacion' => date('Y-m-d', $response->timemodified),
-    'version_instrumento' => 'CHASIDE v1.0'
 );
 
 $results = $facade->generate_results_json($response_array, $meta);
@@ -120,8 +127,10 @@ echo $OUTPUT->header();
 
 $template_data['is_completed'] = true;
 $template_data['meta'] = [
-    'completion_date_label' => ($userid != $USER->id) ? get_string('completion_date_label', 'block_chaside') : '',
-    'fecha_aplicacion' => ($userid != $USER->id) ? userdate($response->timemodified) : ''
+    'completion_date_label' => get_string('completion_date_label', 'block_chaside'),
+    'fecha_aplicacion' => userdate($response->timemodified),
+    'nombre' => fullname($user),
+    'curso' => $course->fullname
 ];
 
 // Area labels mapping for helper function
@@ -203,6 +212,8 @@ $template_data['str_gap'] = get_string('gap', 'block_chaside');
 $template_data['str_interpretation'] = get_string('interpretation', 'block_chaside');
 
 $rows = [];
+$rows_by_area = []; // Store keyed by area for easy lookup
+
 foreach ($results['tabla_principal'] as $row) {
     // Row styling
     $row_class = '';
@@ -222,16 +233,69 @@ foreach ($results['tabla_principal'] as $row) {
     elseif ($row['nivel'] == get_string('level_emergente', 'block_chaside')) $level_class = 'badge-warning';
     
     $gap_class = 'badge-light';
-    if ($row['brecha'] == get_string('gap_interest_higher', 'block_chaside')) $gap_class = 'badge-info';
-    elseif ($row['brecha'] == get_string('gap_aptitude_higher', 'block_chaside')) $gap_class = 'badge-success';
+    $gap_icon = 'fa-balance-scale'; // Default balanced
+    
+    if ($row['brecha'] == get_string('gap_interest_higher', 'block_chaside')) {
+        $gap_class = 'badge-info';
+        $gap_icon = 'fa-heart';
+    } elseif ($row['brecha'] == get_string('gap_aptitude_higher', 'block_chaside')) {
+        $gap_class = 'badge-success';
+        $gap_icon = 'fa-wrench';
+    }
 
     $row['row_class'] = $row_class;
     $row['row_style'] = $row_style;
     $row['level_class'] = $level_class;
     $row['gap_class'] = $gap_class;
+    $row['gap_icon'] = $gap_icon;
+    
     $rows[] = $row;
+    $rows_by_area[$row['area']] = $row;
 }
-$template_data['tabla_principal'] = $rows;
+// Removed: $template_data['tabla_principal'] = $rows; -> We don't want the full table
+$template_data['tabla_principal'] = []; // Explicitly empty to hide table
+
+// Extract detailed info for Top 1 and Top 2
+$top1_area = $results['resumen_ejecutivo']['top1']['area'] ?? null;
+if ($top1_area && isset($rows_by_area[$top1_area])) {
+    $template_data['top1_detailed'] = $rows_by_area[$top1_area];
+}
+
+$top2_area = $results['resumen_ejecutivo']['top2']['area'] ?? null;
+if ($top2_area && isset($rows_by_area[$top2_area])) {
+    $template_data['top2_detailed'] = $rows_by_area[$top2_area];
+}
+
+$remaining_areas = [];
+foreach ($rows_by_area as $area => $row) {
+    if ($area !== $top1_area && $area !== $top2_area) {
+        // Ensure chart percent string is available if not already
+        if (!isset($row['total']['pct'])) {
+             // Logic to ensure pct exists if it was missing?
+             // Based on previous code, $row comes from $results['tabla_principal'] which has total.pct
+        }
+        $remaining_areas[] = $row;
+    }
+}
+
+// Order remaining areas by score (descending)
+usort($remaining_areas, function($a, $b) {
+    if ($a['total']['pct'] == $b['total']['pct']) {
+        return 0;
+    }
+    return ($a['total']['pct'] < $b['total']['pct']) ? 1 : -1;
+});
+
+// Append % symbol for display in "Other Areas"
+foreach ($remaining_areas as &$area) {
+    if (isset($area['total']['pct'])) {
+        $area['total']['pct'] .= '%';
+    }
+}
+unset($area);
+
+$template_data['remaining_areas'] = $remaining_areas;
+$template_data['str_remaining_areas'] = get_string('other_strong_areas', 'block_chaside');
 
 // Recommendations
 $template_data['str_recommendations'] = get_string('recommendations', 'block_chaside');
@@ -257,15 +321,8 @@ $colors = array(
     'S' => '#96CEB4', 'I' => '#FFEAA7', 'D' => '#DDA0DD', 'E' => '#98D8C8'
 );
 $chart_data = [];
-foreach ($results['tabla_principal'] as $row) {
-    $chart_data[] = [
-        'label' => $row['label'],
-        'score' => $row['total']['score'],
-        'pct' => $row['total']['pct'],
-        'color' => $colors[$row['area']]
-    ];
-}
-$template_data['chart_data'] = $chart_data;
+
+$template_data['chart_data'] = []; 
 
 // Guidance Note
 $template_data['str_guidance_note'] = get_string('guidance_note', 'block_chaside');

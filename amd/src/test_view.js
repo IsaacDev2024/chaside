@@ -85,7 +85,7 @@ define(['jquery', 'core/ajax', 'core/str', 'core/notification'], function($, aja
                 if (self.autoSaveTimer) {
                     clearTimeout(self.autoSaveTimer);
                 }
-                self.autoSaveTimer = setTimeout(self.autoSaveProgress.bind(self), 2000);
+                self.autoSaveTimer = setTimeout(self.autoSaveProgress.bind(self), 400);
 
             }, true);
 

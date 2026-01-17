@@ -35,7 +35,7 @@ if (has_capability('block/chaside:manage_responses', $context)) {
 }
 
 $PAGE->set_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page));
-$PAGE->set_title(get_string('test_title', 'block_chaside'));
+$PAGE->set_title(get_string('pluginname', 'block_chaside'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 $PAGE->requires->css('/blocks/chaside/styles.css');
@@ -261,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $DB->update_record('block_chaside_responses', $data);
                 
-                redirect(new moodle_url('/course/view.php', array('id' => $courseid)), get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+                redirect(new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid)), get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
             } else {
                  // Find first unanswered question and redirect to that page
                 $first_unanswered = $missing_questions[0];
@@ -286,7 +286,7 @@ echo $OUTPUT->header();
 // Prepare Mustache context
 $data = [
     'iconurl' => (new moodle_url('/blocks/chaside/pix/icon.svg'))->out(),
-    'title' => get_string('test_title', 'block_chaside'),
+    'title' => get_string('pluginname', 'block_chaside'),
     'description' => get_string('test_description', 'block_chaside'),
     'str_note' => get_string('note', 'block_chaside'),
     'str_all_questions_required' => get_string('all_questions_required', 'block_chaside'),

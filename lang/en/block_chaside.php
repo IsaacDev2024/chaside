@@ -394,7 +394,7 @@ $string['all_questions_must_be_answered'] = 'You must answer all 98 questions be
 
 // All questions answered strings
 $string['all_answered_title'] = 'All Questions Answered!';
-$string['all_answered_message'] = 'You have answered all 98 questions. Don\'t forget to click "Finish Exploration" to submit your answers and see your vocational orientation results!';
+$string['all_answered_message'] = 'You have answered all 98 questions. Don\'t forget to click "Finish Exploration" to submit your answers and view your vocational orientation results!';
 // Test in progress and remind strings
 $string['remind_submit_test'] = 'Remind the student to click the "Finish Exploration" button to view the results.';
 $string['finish_test_now'] = 'Finish Exploration';

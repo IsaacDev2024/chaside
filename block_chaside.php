@@ -232,7 +232,11 @@ class block_chaside extends block_base {
             $area_code = $results['resumen_ejecutivo']['top1']['area'];
             $data['top1'] = $results['resumen_ejecutivo']['top1'];
             $data['top1']['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
-            if (isset($alert_map[$area_code])) {
+            
+            if (isset($data['top1']['gap_type']) && $data['top1']['gap_type'] === 'gap_balanced') {
+                $data['top1']['gap_alert'] = get_string('gap_balanced', 'block_chaside');
+                $data['top1']['gap_icon'] = 'fa-balance-scale';
+            } elseif (isset($alert_map[$area_code])) {
                 $gap_msg = $alert_map[$area_code];
                 $data['top1']['gap_alert'] = $gap_msg;
                 // Determine icon
@@ -250,7 +254,11 @@ class block_chaside extends block_base {
             $area_code = $results['resumen_ejecutivo']['top2']['area'];
             $data['top2'] = $results['resumen_ejecutivo']['top2'];
             $data['top2']['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
-             if (isset($alert_map[$area_code])) {
+            
+            if (isset($data['top2']['gap_type']) && $data['top2']['gap_type'] === 'gap_balanced') {
+                 $data['top2']['gap_alert'] = get_string('gap_balanced', 'block_chaside');
+                 $data['top2']['gap_icon'] = 'fa-balance-scale';
+            } elseif (isset($alert_map[$area_code])) {
                 $gap_msg = $alert_map[$area_code];
                 $data['top2']['gap_alert'] = $gap_msg;
                 // Determine icon

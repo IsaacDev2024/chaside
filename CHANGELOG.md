@@ -5,6 +5,19 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] — 2026-01-16
+
+### Agregado
+- Opción para mostrar/ocultar las descripciones en el bloque principal.
+
+### Cambiado
+- Rediseño de la vista de resultados detallados para mejorar la legibilidad y usabilidad.
+- Se mantiene el titulo "Exploración de Orientación Vocacional" en todas las vistas del bloque.
+- Se ha eliminado las referencias a la palabra "Test" y al nombre "CHASIDE".
+
+### Corregido
+- Redirección tras completar el test: ahora redirige a la página de resultados detallados en lugar de al curso principal.
+
 ## [2.0.1] — 2026-01-08
 
 ### Agregado

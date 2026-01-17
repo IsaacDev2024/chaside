@@ -252,8 +252,10 @@ class facade {
         $gap_alerts = array();
         
         if ($top1) {
+            $top1['gap_type'] = $gaps[$top1['area']]; // Add gap type
             $quick_reading = get_string('highest_strength_in', 'block_chaside') . " " . $labels[$top1['area']];
             if ($top2) {
+                $top2['gap_type'] = $gaps[$top2['area']]; // Add gap type
                 $quick_reading .= " y " . $labels[$top2['area']];
             }
         }
@@ -340,6 +342,7 @@ class facade {
                 'top1' => $top1 ? array(
                     'area' => $top1['area'],
                     'label' => $labels[$top1['area']],
+                    'gap_type' => $top1['gap_type'] ?? null,
                     'total' => $top1['total_score'],
                     'pct_total' => $percentages[$top1['area']]['pct_total'],
                     'i' => $top1['interes_score'],
@@ -348,6 +351,7 @@ class facade {
                 'top2' => $top2 ? array(
                     'area' => $top2['area'],
                     'label' => $labels[$top2['area']],
+                    'gap_type' => $top2['gap_type'] ?? null,
                     'total' => $top2['total_score'],
                     'pct_total' => $percentages[$top2['area']]['pct_total'],
                     'i' => $top2['interes_score'],

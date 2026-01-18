@@ -40,6 +40,13 @@ class block_chaside extends block_base {
         
         $data = [];
         $template = 'block_chaside/content';
+        
+        // Configuration
+        $showdescriptions = false;
+        if (!empty($this->config) && !empty($this->config->showdescriptions)) {
+            $showdescriptions = true;
+        }
+        $data['showdescriptions'] = $showdescriptions;
 
         // Check if user can manage responses (teacher/admin)
         if (has_capability('block/chaside:manage_responses', $context)) {
@@ -53,11 +60,15 @@ class block_chaside extends block_base {
             
             if ($response && $response->is_completed) {
                 // Show results
-                $data['results'] = $this->get_student_results_data($response);
+                $results_data = $this->get_student_results_data($response);
+                $results_data['showdescriptions'] = $showdescriptions;
+                $data['results'] = $results_data;
                 $data['iscompleted'] = true;
             } else {
                 // Show invitation
-                $data['invitation'] = $this->get_student_invite_data($response);
+                $invite_data = $this->get_student_invite_data($response);
+                $invite_data['showdescriptions'] = $showdescriptions;
+                $data['invitation'] = $invite_data;
                 $data['iscompleted'] = false;
             }
         }
@@ -148,7 +159,6 @@ class block_chaside extends block_base {
             'nombre' => fullname($USER),
             'curso' => $COURSE->shortname,
             'fecha_aplicacion' => date('Y-m-d', $response->timemodified),
-            'version_instrumento' => 'CHASIDE v1.0'
         );
         
         $results = $facade->generate_results_json($response_array, $meta);
@@ -156,7 +166,7 @@ class block_chaside extends block_base {
         $data = [
             'iconurl' => (new moodle_url('/blocks/chaside/pix/icon.svg'))->out(),
             'str_completed_title' => get_string('test_completed', 'block_chaside'),
-            'str_completed_subtitle' => get_string('your_orientation_results', 'block_chaside'),
+            'str_completed_subtitle' => get_string('your_results_here', 'block_chaside'),
             'description' => get_string('chaside_description', 'block_chaside'),
             'str_executive_summary' => get_string('executive_summary', 'block_chaside'),
             'str_gap_alerts' => get_string('gap_alerts', 'block_chaside'),
@@ -168,27 +178,78 @@ class block_chaside extends block_base {
         if (!empty($results['resumen_ejecutivo']['top1'])) {
             $data['top1'] = $results['resumen_ejecutivo']['top1'];
         }
-        if (!empty($results['resumen_ejecutivo']['top2'])) {
-            $data['top2'] = $results['resumen_ejecutivo']['top2'];
-        }
+        $area_icons = [
+            'C' => 'fa-calculator',
+            'H' => 'fa-university',
+            'A' => 'fa-paint-brush',
+            'S' => 'fa-user-md',
+            'I' => 'fa-cogs',
+            'D' => 'fa-shield',
+            'E' => 'fa-leaf'
+        ];
 
+        // Process alerts first to have them ready
+        $alert_map = array();
         if (!empty($results['resumen_ejecutivo']['alertas_brecha'])) {
-            $data['has_gap_alerts'] = true;
-            $alerts = [];
-            foreach ($results['resumen_ejecutivo']['alertas_brecha'] as $alert) {
-                 $badge_class = 'badge-warning';
-                if ($alert['tipo'] == get_string('gap_interest_higher', 'block_chaside')) {
-                    $badge_class = 'badge-info';
-                } elseif ($alert['tipo'] == get_string('gap_aptitude_higher', 'block_chaside')) {
-                    $badge_class = 'badge-success';
+             foreach ($results['resumen_ejecutivo']['alertas_brecha'] as $alert) {
+                 $rawarea = isset($alert['area']) ? trim((string)$alert['area']) : '';
+                 $areacode = '';
+                 
+                 if (preg_match('/^\s*([CHASIDE])\s*$/u', $rawarea, $m)) {
+                     $areacode = $m[1];
+                 } elseif (preg_match('/\(([CHASIDE])\)\s*$/u', $rawarea, $m)) {
+                     $areacode = $m[1];
+                 }
+                 
+                 // Fallback: Check if the string starts with one of the keys
+                 if (!$areacode) {
+                     foreach (array_keys($area_icons) as $code) {
+                         if (strpos($rawarea, $code) !== false) {
+                             $areacode = $code;
+                             break;
+                         }
+                     }
+                 }
+
+                 if ($areacode) {
+                     $alert_map[$areacode] = $alert['tipo'];
+                 }
+             }
+        }
+        $data['has_gap_alerts'] = false; // Hide separate list
+        $data['alerts'] = [];
+
+        // Common strings for results
+        $data['str_total'] = get_string('total', 'block_chaside');
+        $data['str_interests'] = get_string('interests', 'block_chaside');
+        $data['str_aptitudes'] = get_string('aptitudes', 'block_chaside');
+
+        // Gap strings for icons
+        $txt_int_high = get_string('gap_interest_higher', 'block_chaside');
+        $txt_apt_high = get_string('gap_aptitude_higher', 'block_chaside');
+
+        foreach (['top1', 'top2'] as $key) {
+            if (!empty($results['resumen_ejecutivo'][$key])) {
+                $area_code = $results['resumen_ejecutivo'][$key]['area'];
+                $data[$key] = $results['resumen_ejecutivo'][$key];
+                $data[$key]['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
+                
+                if (isset($data[$key]['gap_type']) && $data[$key]['gap_type'] === 'gap_balanced') {
+                    $data[$key]['gap_alert'] = get_string('gap_balanced', 'block_chaside');
+                    $data[$key]['gap_icon'] = 'fa-balance-scale';
+                } elseif (isset($alert_map[$area_code])) {
+                    $gap_msg = $alert_map[$area_code];
+                    $data[$key]['gap_alert'] = $gap_msg;
+                    // Determine icon
+                    if ($gap_msg === $txt_int_high) {
+                        $data[$key]['gap_icon'] = 'fa-heart';
+                    } elseif ($gap_msg === $txt_apt_high) {
+                        $data[$key]['gap_icon'] = 'fa-graduation-cap';
+                    } else {
+                        $data[$key]['gap_icon'] = 'fa-balance-scale';
+                    }
                 }
-                $alerts[] = [
-                    'badge_class' => $badge_class,
-                    'area' => $alert['area'],
-                    'type' => $alert['tipo']
-                ];
             }
-            $data['alerts'] = $alerts;
         }
 
         // De-duplicate recommendations
@@ -222,7 +283,7 @@ class block_chaside extends block_base {
 
         $data = [
             'iconurl' => (new moodle_url('/blocks/chaside/pix/icon.svg'))->out(),
-            'str_vocational_orientation' => get_string('vocational_orientation', 'block_chaside'),
+            'str_vocational_orientation' => get_string('pluginname', 'block_chaside'),
             'str_discover_interests' => get_string('discover_your_interests', 'block_chaside'),
             'description' => get_string('chaside_description', 'block_chaside'),
              'str_what_is_chaside' => get_string('what_is_chaside', 'block_chaside'),

@@ -39,7 +39,8 @@ Este repositorio incluye:
   - Posibilidad de **eliminación** de resultados individuales.
   - **Agregados por área** (promedios/distribuciones) basados en estudiantes matriculados.
   - **Exportación** de resultados completados del curso en **CSV** o **JSON**.
-
+- Opción para **mostrar/ocultar** las descripciones en el bloque principal **(oculto por defecto)**.
+- **Controles de privacidad**: acceso restringido por capacidades y por matrícula en el curso.
 ---
 
 ## Recorrido Visual
@@ -50,14 +51,14 @@ Este repositorio incluye:
 
 El recorrido comienza con una invitación clara y directa. Desde el bloque principal del curso, el estudiante puede visualizar su estado actual y acceder al test con un solo click, facilitando la participación sin fricciones.
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/f17a86c6-648a-4230-b898-448a4c6b961e" alt="Invitación al Test" width="528">
+  <img src="https://github.com/user-attachments/assets/00ee44ce-6df6-413f-879d-e2a3f069b7b7" alt="Invitación al Test" width="528">
 </p>
 
 **Interfaz de Evaluación Optimizada**
 
 Se presenta un entorno de respuesta limpio y libre de distracciones. La interfaz ha sido diseñada para priorizar la legibilidad y la facilidad de uso, permitiendo que el estudiante se concentre totalmente en el proceso de autodescubrimiento.
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/e6e68b6b-f385-4c34-bfba-94229468d8d5" alt="Formulario del Test" height="500">
+  <img src="https://github.com/user-attachments/assets/d8c9fba5-1e8f-4a45-a7ce-2442246d4873" alt="Formulario del Test" width="650">
 </p>
 
 **Asistencia y Validación en Tiempo Real**
@@ -65,7 +66,7 @@ Se presenta un entorno de respuesta limpio y libre de distracciones. La interfaz
 Para garantizar la integridad de los datos, el sistema implementa una validación inteligente. Si el usuario olvida alguna respuesta, el sistema lo guía visualmente mediante alertas en rojo y un desplazamiento automático hacia los campos pendientes, asegurando una experiencia sin errores.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3af5441c-ca78-4792-ada5-33d0a533a5af" alt="Validación" width="528">
+  <img src="https://github.com/user-attachments/assets/3af5441c-ca78-4792-ada5-33d0a533a5af" alt="Validación" width="650">
 </p>
 
 **Persistencia de Progreso y Continuidad**
@@ -73,7 +74,7 @@ Para garantizar la integridad de los datos, el sistema implementa una validació
 Entendemos que el tiempo es valioso. Si el estudiante debe interrumpir su sesión, el sistema guarda automáticamente su avance. Al regresar, el bloque muestra el porcentaje de progreso y permite reanudar el test exactamente donde se dejó, resaltando visualmente la siguiente pregunta a responder.
 	
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3f47a302-9fe5-49d6-82dc-6215cf1a6d15" alt="Progreso del Test" height="350">
+  <img src="https://github.com/user-attachments/assets/da62058b-cd95-41fd-a23b-04d294fc86db" alt="Progreso del Test" height="350">
   &nbsp;&nbsp;
   <img src="https://github.com/user-attachments/assets/d51e2a2e-e78e-461d-b97c-5cdf89ca1f68" alt="Continuar Test" height="350">
 </p>
@@ -82,7 +83,7 @@ Entendemos que el tiempo es valioso. Si el estudiante debe interrumpir su sesió
 Si el estudiante ha completado las 44 preguntas pero aún no ha procesado el envío, el bloque muestra una notificación clara y amigable, invitándolo a formalizar la entrega y conocer su orientación vocacional.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a6bbc48b-d495-4832-8d4a-42dc9f3f42dd" alt="Confirmación de Test Completado" width="528">
+  <img src="https://github.com/user-attachments/assets/f6695cfb-5d47-4140-848c-f91115f2eb9a" alt="Confirmación de Test Completado" width="528">
 </p>
 
 **Análisis de Perfil y Recomendaciones Personalizadas**
@@ -90,11 +91,11 @@ Si el estudiante ha completado las 44 preguntas pero aún no ha procesado el env
 Al concluir, el estudiante recibe un diagnóstico de su orientación vocacional. La presentación incluye un resumen ejecutivo con las áreas principales, alertas de brecha, todo acompañado de pequeñas recomendaciones. Por último tiene la opción de ver un resultado detallado con toda la información completa.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/532c2dbf-dc8f-474f-8342-7202c79dc61d" alt="Resultados del Estudiante - Bloque" width="528">
+  <img src="https://github.com/user-attachments/assets/b678e63c-146b-4e0f-8ed5-fcd0cde4455e" alt="Resultados del Estudiante - Bloque" width="528">
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1c4a2470-b499-4a8d-8107-a8496f2e3f83" alt="Resultados del Estudiante - Page" width="800">
+  <img src="https://github.com/user-attachments/assets/d3e9e14c-59fc-4198-9134-eca112bf9021" alt="Resultados del Estudiante - Page" width="800">
 </p>
 
 ### 2. Experiencia del Profesor
@@ -104,7 +105,7 @@ Al concluir, el estudiante recibe un diagnóstico de su orientación vocacional.
 El profesor cuenta con una vista ejecutiva desde el bloque, donde puede monitorizar métricas clave, además de acceder a funciones avanzadas de administración.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/abc791f3-1840-4add-a7cd-83a05e84bdbe" alt="Bloque del Profesor" width="528">
+  <img src="https://github.com/user-attachments/assets/3b6b253e-71af-47de-a899-dc32e700b345" alt="Bloque del Profesor" width="528">
 </p>
 
 **Centro de Gestión y Analíticas**
@@ -112,7 +113,7 @@ El profesor cuenta con una vista ejecutiva desde el bloque, donde puede monitori
 Un panel de administración que centraliza el seguimiento grupal. Permite visualizar quiénes han completado el proceso, quiénes están en curso y gestionar los resultados colectivos para adaptar la estrategia pedagógica del aula.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/85b17a8e-5d24-499c-b787-c2e157547550" alt="Panel de Administración" width="800">
+  <img src="https://github.com/user-attachments/assets/97043093-a093-4389-96ff-b891de215a39" alt="Panel de Administración" width="800">
 </p>
 
 **Seguimiento Individualizado y Detallado**
@@ -197,7 +198,7 @@ El formulario se implementa en `view.php` con POST al mismo script, usando `acti
 
 Comportamientos clave:
 
-- Autosave: se ejecuta tras **2 segundos** desde el último cambio.
+- Autosave: se ejecuta tras **400 milisegundos** desde el último cambio.
 - Validación por página en cliente: al intentar **Siguiente** o **Finalizar**, marca tarjetas “unanswered” y hace scroll a la primera pendiente.
 - Validación final en servidor: no permite finalizar si falta alguna respuesta; redirige a la página donde está la primera pregunta sin responder.
 - Anti-salto de páginas: el servidor calcula una **página máxima permitida** a partir del progreso guardado.
@@ -252,7 +253,7 @@ Controles adicionales implementados:
 
 ## Instalación
 
-1. Descargar el plugin desde las *releases* del repositorio oficial: https://github.com/ISCOUTB/chaside
+1. Descargar el plugin desde las *releases* del repositorio oficial: https://github.com/ISCOUTB/chaside/releases
 2. En Moodle (como administrador):
    - Ir a **Administración del sitio → Extensiones → Instalar plugins**.
    - Subir el archivo ZIP.

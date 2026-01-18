@@ -8,32 +8,36 @@ $string['chaside:take_test'] = 'Realizar el test CHASIDE';
 $string['chaside:viewreports'] = 'Ver reportes del test CHASIDE';
 $string['chaside:manage'] = 'Gestionar el test CHASIDE';
 
+// Configuración
+$string['config_showdescriptions'] = 'Mostrar descripciones';
+$string['config_showdescriptions_help'] = 'Muestra u oculta los banners de descripción en el bloque.';
+
 // General strings
-$string['test_title'] = 'Exploración de orientación vocacional';
-$string['test_instructions'] = 'Instrucciones del Test';
-$string['test_description'] = 'Este test te ayudará a descubrir tus intereses vocacionales. Responde "SÍ" o "NO" a cada pregunta según lo que realmente te gusta hacer.';
-$string['start_test'] = 'Iniciar Test';
-$string['continue_test'] = 'Continuar Test';
+$string['test_instructions'] = 'Instrucciones';
+$string['test_description'] = 'Esta exploración te ayudará a descubrir tus intereses vocacionales. Responde "SÍ" o "NO" a cada pregunta según lo que realmente te gusta hacer.';
+$string['start_test'] = 'Iniciar Exploración';
+$string['continue_test'] = 'Continuar Exploración';
 $string['view_results'] = 'Ver Resultados';
-$string['test_completed'] = 'Test Completado';
+$string['test_completed'] = 'Exploración de Orientación Vocacional Completada';
 $string['date_not_available'] = 'Fecha no disponible';
 $string['of'] = 'de';
 $string['highest_strength_in'] = 'Mayor fortaleza en';
-$string['your_orientation_results'] = 'Tu Orientación Vocacional';
+$string['your_results_here'] = 'Mira tus resultados aquí';
+$string['your_orientation_results'] = 'Tus Resultados de Orientación Vocacional';
 
 // Button labels
 $string['btn_previous'] = 'Página Anterior';
 $string['btn_next'] = 'Página Siguiente';
-$string['btn_finish'] = 'Finalizar Test';
+$string['btn_finish'] = 'Finalizar Exploración';
 $string['yes'] = 'SÍ';
 $string['no'] = 'NO';
 
 // Test in progress strings
-$string['test_in_progress'] = 'Test en Progreso';
-$string['test_in_progress_message'] = '{$a} ha comenzado el test pero aún no lo ha completado.';
+$string['test_in_progress'] = 'Exploración en Progreso';
+$string['test_in_progress_message'] = '{$a} ha comenzado la exploración pero aún no la ha completado.';
 $string['has_answered'] = 'Ha respondido';
 $string['questions'] = 'preguntas';
-$string['results_available_when_complete'] = 'Los resultados completos estarán disponibles cuando {$a} termine el test.';
+$string['results_available_when_complete'] = 'Los resultados completos estarán disponibles cuando {$a} termine la exploración.';
 $string['back_to_admin'] = 'Volver al Panel de Administración';
 $string['progress_label'] = 'Progreso';
 
@@ -41,9 +45,10 @@ $string['progress_label'] = 'Progreso';
 $string['your_results'] = 'Tus Resultados';
 $string['viewing_results_of'] = 'Viendo los resultados de {$a}';
 $string['area_scores'] = 'Puntuaciones por Área';
+$string['your_top_areas'] = 'Tus Áreas Destacadas';
 $string['your_top_area'] = 'Tu Área Principal';
-$string['second_top_area'] = 'Segunda Área Principal';
-$string['other_strong_areas'] = 'Otras Áreas Destacadas';
+$string['second_top_area'] = 'Tu Segunda Área Principal';
+$string['other_strong_areas'] = 'Otras Áreas';
 $string['area_description'] = 'Descripción del Área';
 $string['career_suggestions'] = 'Sugerencias de Carreras';
 $string['total_score'] = 'Puntuación Total';
@@ -162,7 +167,7 @@ $string['q97'] = '¿Te gustaría trabajar como profesional dirigiendo la constru
 $string['q98'] = '¿Sabes qué es el PIB? Se trata de un concepto económico. ¿Te gusta este tipo de tema?';
 
 // Admin strings
-$string['admin_dashboard'] = 'Administración - Orientación Vocacional';
+$string['admin_dashboard'] = 'Administración - Exploración Orientación Vocacional';
 $string['admin_dashboard_invitation'] = 'Ir al Panel de Administración';
 $string['student'] = 'Estudiante';
 $string['completiondate'] = 'Fecha de Última Acción';
@@ -174,20 +179,20 @@ $string['response_deleted_success'] = 'Las respuestas del estudiante han sido el
 $string['deleteduser'] = 'Usuario eliminado';
 $string['no_responses_found'] = 'No hay resultados disponibles aún.';
 $string['confirm_delete'] = 'Confirmar eliminación';
-$string['admin_dashboard_description'] = 'Panel de administración del Test CHASIDE. Aquí puedes ver estadísticas detalladas, gestionar respuestas de estudiantes y exportar datos.';
+$string['admin_dashboard_description'] = 'Panel de Administración de la Exploración Orientación Vocacional. Aquí puedes ver estadísticas detalladas, gestionar respuestas de estudiantes y exportar datos.';
 
 // Management interface strings
-$string['management_title'] = 'Gestión del Test CHASIDE';
+$string['management_title'] = 'Gestión - Exploración Orientación Vocacional';
 $string['course_overview'] = 'Resumen del Curso';
 $string['completion_rate'] = 'Tasa de Finalización';
 $string['completed'] = 'Completados';
 $string['in_progress'] = 'En Progreso';
-$string['students_completed'] = 'estudiantes completaron el test';
+$string['students_completed'] = 'estudiantes completaron la exploración';
 $string['recent_completions'] = 'Finalizados Recientemente';
 $string['manage_responses'] = 'Panel de Administración';
 $string['statistics'] = 'Estadísticas';
 $string['enrolled_students'] = 'Total de Estudiantes';
-$string['total_completed'] = 'Total Completados';
+$string['total_completed'] = 'Exploraciones Completadas';
 $string['area_statistics'] = 'Estadísticas por Área';
 $string['average_score'] = 'Puntuación Promedio';
 $string['preference'] = 'de preferencia';
@@ -202,7 +207,7 @@ $string['response_date'] = 'Fecha de Respuesta';
 $string['view_details'] = 'Ver Detalles';
 $string['not_started'] = 'No Iniciado';
 $string['response_deleted'] = 'Respuesta eliminada';
-$string['no_participants_message'] = 'Aún no hay estudiantes que hayan comenzado el test.';
+$string['no_participants_message'] = 'Aún no hay estudiantes que hayan comenzado la exploración.';
 $string['top_areas_distribution'] = 'Distribución de Áreas Dominantes';
 $string['primary_area_title'] = 'Área Principal (Top 1) - ¿Qué eligen más los estudiantes?';
 $string['secondary_area_title'] = 'Interés Secundario (Top 2) - La segunda opción más fuerte';
@@ -214,8 +219,8 @@ $string['delete'] = 'Eliminar';
 $string['confirm_delete_yes'] = 'Sí, eliminar';
 $string['cancel'] = 'Cancelar';
 $string['total_students'] = 'Total de Estudiantes';
-$string['completed_tests'] = 'Tests Completados';
-$string['in_progress_tests'] = 'Tests en Progreso';
+$string['completed_tests'] = 'Exploraciones Completadas';
+$string['in_progress_tests'] = 'Exploraciones en Progreso';
 $string['general_statistics'] = 'Estadísticas Generales';
 $string['most_common_areas'] = 'Áreas Más Comunes';
 $string['no_data_available'] = 'No hay datos disponibles';
@@ -226,24 +231,23 @@ $string['export_csv'] = 'Exportar CSV';
 $string['email'] = 'Correo Electrónico';
 
 // Student interface strings
-$string['vocational_orientation'] = 'Orientación Vocacional';
 $string['discover_your_interests'] = 'Descubre tus intereses y habilidades profesionales';
-$string['what_is_chaside'] = '¿Qué es CHASIDE?';
-$string['chaside_description'] = 'El modelo CHASIDE conecta tus intereses y aptitudes naturales con siete grandes áreas ocupacionales. Esta evaluación explora tu perfil para ofrecerte un panorama vocacional claro, ayudándote a tomar decisiones de carrera seguras que se alineen verdaderamente con tus talentos y pasiones a futuro.';
+$string['what_is_chaside'] = '¿En qué consiste esta exploración?';
+$string['chaside_description'] = 'Conecta tus intereses y aptitudes naturales con siete grandes áreas ocupacionales. La evaluación explora tu perfil para ofrecerte un panorama vocacional claro, ayudándote a tomar decisiones de carrera seguras que se alineen verdaderamente con tus talentos y pasiones a futuro.';
 $string['feature_98_questions'] = '98 Preguntas Estratégicas';
 $string['feature_7_areas'] = '7 Áreas Vocacionales';
 $string['feature_instant_results'] = 'Resultados Instantáneos y Detallados';
 $string['questions_unanswered'] = 'Preguntas sin Responder';
 $string['progress_saved'] = 'Progreso guardado correctamente';
-$string['test_completed_success'] = 'Enhorabuena, ahora puedes ver tus resultados en la barra lateral del curso.';
+$string['test_completed_success'] = 'Enhorabuena, ahora puedes ver tus resultados aquí.';
 $string['points'] = 'Puntos';
 $string['view_detailed_results'] = 'Ver Resultados Detallados';
 
 // Additional interface strings
 $string['teachers_redirect_message'] = 'Los profesores son redirigidos al panel de gestión';
-$string['complete_all_questions'] = 'Complete todas las preguntas para finalizar el test';
+$string['complete_all_questions'] = 'Complete todas las preguntas para finalizar la exploración';
 $string['questions_remaining'] = 'preguntas restantes';
-$string['test_not_found'] = 'Test no encontrado o no completado';
+$string['test_not_found'] = 'Exploración no encontrada o no completada';
 $string['completion_date_label'] = 'Fecha de Finalización:';
 $string['back_to_course'] = 'Volver al Curso';
 $string['your_progress'] = 'Tu Progreso';
@@ -370,19 +374,22 @@ $string['export_technical_score'] = 'Puntuación Enseñanzas Técnicas (I)';
 $string['export_defense_security_score'] = 'Puntuación Defensa y Seguridad (D)';
 $string['export_experimental_sciences_score'] = 'Puntuación Ciencias Experimentales (E)';
 $string['export_top_area'] = 'Área Principal';
-$string['export_filename'] = 'CHASIDE_Orientacion_Vocacional';
+$string['export_filename'] = 'Exploracion_Orientacion_Vocacional';
 
 // Validation and feedback strings
 $string['note'] = 'Nota';
 $string['all_questions_required'] = 'Todas las preguntas de cada página son obligatorias. Debes responder todas antes de continuar.';
 
 // Security validation strings
-$string['all_questions_must_be_answered'] = 'Debes responder las 98 preguntas antes de finalizar el test. Has sido redirigido a la primera pregunta sin responder.';
+$string['all_questions_must_be_answered'] = 'Debes responder las 98 preguntas antes de finalizar la exploración. Has sido redirigido a la primera pregunta sin responder.';
 
 // All questions answered strings
 $string['all_answered_title'] = '¡Todas las Preguntas Respondidas!';
-$string['all_answered_message'] = 'Has respondido las 98 preguntas. ¡No olvides hacer clic en "Finalizar Test" para enviar tus respuestas y ver tus resultados de orientación vocacional!';
+$string['all_answered_message'] = 'Has respondido las 98 preguntas. ¡No olvides hacer clic en "Finalizar Exploración" para enviar tus respuestas y ver tus resultados de orientación vocacional!';
 
 // Test in progress and remind strings
-$string['remind_submit_test'] = 'Recuérdale al estudiante que haga clic en el botón "Finalizar Test" para ver los resultados.';
-$string['finish_test_now'] = 'Finalizar Test';
+$string['remind_submit_test'] = 'Recuérdale al estudiante que haga clic en el botón "Finalizar Exploración" para ver los resultados.';
+$string['finish_test_now'] = 'Finalizar Exploración';
+
+// View Individual Results Page
+$string['individual_results'] = 'Resultados Individuales de la Exploración de Orientación Vocacional';

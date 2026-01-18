@@ -5,6 +5,21 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] — 2026-01-18
+
+### Agregado
+- Opción para mostrar/ocultar las descripciones en el bloque principal.
+
+### Cambiado
+- Rediseño de la vista de resultados detallados para mejorar la legibilidad y usabilidad.
+- Se mantiene el titulo "Exploración de Orientación Vocacional" en todas las vistas del bloque.
+- Se ha eliminado las referencias a la palabra "Test" y al nombre "CHASIDE".
+
+### Corregido
+- Redirección tras completar el test: ahora redirige a la página de resultados detallados en lugar de al curso principal.
+- Solución de problemas de concurrencia ("race condition") entre el autoguardado y la navegación rápida entre páginas.
+- Optimización de la lógica de guardado en `view.php` para priorizar los datos enviados por formulario (`POST`).
+
 ## [2.0.1] — 2026-01-08
 
 ### Agregado

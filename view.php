@@ -35,7 +35,7 @@ if (has_capability('block/chaside:manage_responses', $context)) {
 }
 
 $PAGE->set_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page));
-$PAGE->set_title(get_string('test_title', 'block_chaside'));
+$PAGE->set_title(get_string('pluginname', 'block_chaside'));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_context($context);
 $PAGE->requires->css('/blocks/chaside/styles.css');
@@ -118,7 +118,6 @@ if ($existing_response) {
     }
 }
 
-// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_sesskey();
     
@@ -129,149 +128,171 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     $action = optional_param('action', 'save', PARAM_ALPHA);
+
+    // Prepare helper to get responses safely
+    function get_answers_from_post() {
+        $responses = array();
+        for ($i = 1; $i <= BLOCK_CHASIDE_TOTAL_QUESTIONS; $i++) {
+            $response = optional_param("q{$i}", null, PARAM_INT);
+            if ($response !== null) {
+                $responses["q{$i}"] = $response;
+            }
+        }
+        return $responses;
+    }
+
+    $posted_responses = get_answers_from_post();
     
     // Prepare base data
-    $data = array(
-        'userid' => $USER->id,
-        'timemodified' => time()
-    );
+    $data = new stdClass();
+    $data->userid = $USER->id;
+    $data->timemodified = time();
+    $data->is_completed = 0;
     
     // If a previous response exists, retain all existing data.
     if ($existing_response) {
-        $data['id'] = $existing_response->id;
-        // Copy all existing answers
+        $data->id = $existing_response->id;
+        $data->timecreated = $existing_response->timecreated;
+        
+        // Copy all existing answers from DB to preserve them
         for ($i = 1; $i <= BLOCK_CHASIDE_TOTAL_QUESTIONS; $i++) {
             if (isset($existing_response->{"q{$i}"})) {
-                $data["q{$i}"] = $existing_response->{"q{$i}"};
+                $data->{"q{$i}"} = $existing_response->{"q{$i}"};
             }
         }
-        // Maintain existing scores
-        $fields = ['score_c', 'score_h', 'score_a', 'score_s', 'score_i', 'score_d', 'score_e', 'is_completed', 'timemodified', 'timecreated'];
-        foreach ($fields as $field) {
-            if (isset($existing_response->$field)) $data[$field] = $existing_response->$field;
+    } else {
+        $data->timecreated = time();
+    }
+    
+    // OVERWRITE with new answers from current POST (this is crucial: trust POST over DB for current page)
+    foreach ($posted_responses as $key => $val) {
+        $data->$key = $val;
+    }
+    
+    // -------------------------------------------------------------------------
+    // AUTO-SAVE LOGIC
+    // -------------------------------------------------------------------------
+    if ($action === 'autosave') {
+        header('Content-Type: application/json');
+        
+        // Optimize: If nothing changed from DB, don't write.
+        // But for safety against race conditions, we usually write.
+        // Let's just trust the write.
+
+        if (empty($posted_responses) && !$existing_response) {
+             echo json_encode(['success' => true, 'message' => 'No data to save']);
+             exit;
         }
 
-    } else {
-        $data['timecreated'] = time();
-        $data['is_completed'] = 0;
-    }
-    
-    // Collect ALL responses submitted through the form (not just those on the current page)
-    $has_any_answer = false;
-    for ($i = 1; $i <= $total_questions; $i++) {
-        $response = optional_param("q{$i}", null, PARAM_INT);
-        if ($response !== null) {
-            $data["q{$i}"] = $response;
-            $has_any_answer = true;
+        try {
+            if ($existing_response) {
+                // To avoid "century" update, maybe check if update is needed?
+                // But Moodle update_record is fast.
+                $DB->update_record('block_chaside_responses', $data);
+            } else {
+                // ... logic ...
+
+                $race_check = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                if ($race_check) {
+                    $data->id = $race_check->id;
+                    $DB->update_record('block_chaside_responses', $data);
+                } else {
+                    $DB->insert_record('block_chaside_responses', $data);
+                }
+            }
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
+        exit;
     }
-    
-    if (!$has_any_answer && !$existing_response) {
-        if ($action === 'autosave') {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => 'No data to save']);
-            exit;
+
+    // -------------------------------------------------------------------------
+    // NAVIGATION LOGIC (Previous / Next)
+    // -------------------------------------------------------------------------
+    if ($action === 'previous' || $action === 'next') {
+        // First: SAVE EVERYTHING WE HAVE from the POST
+        try {
+             if ($existing_response) {
+                $DB->update_record('block_chaside_responses', $data);
+            } else {
+                 // Double check race condition again
+                $race_check = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                if ($race_check) {
+                    $data->id = $race_check->id;
+                    $DB->update_record('block_chaside_responses', $data);
+                } else {
+                    $DB->insert_record('block_chaside_responses', $data);
+                }
+            }
+        } catch (Exception $e) {
+             // If save fails, we should probably stop and show error
+             print_error('Error saving data: ' . $e->getMessage());
         }
-    }
-    
-    // Verify that all questions on the current page are answered (for navigation purposes only)
-    $current_page_complete = true;
-    $missing_questions_current_page = array();
-    
-    for ($i = $start_question; $i <= $end_question; $i++) {
-        $response = optional_param("q{$i}", null, PARAM_INT);
-        if ($response !== null) {
-            $data["q{$i}"] = $response;
+
+        if ($action === 'previous') {
+             if ($page > 1) {
+                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page - 1)));
+            }
         } else {
-            // Check if there is already a previous answer to this question.
-            if (!$existing_response || !isset($existing_response->{"q{$i}"}) || $existing_response->{"q{$i}"} === null) {
-                $current_page_complete = false;
-                $missing_questions_current_page[] = $i;
+            // ACTION: NEXT
+            if ($page < $total_pages) {
+                // We rely on the top-of-page Security check to validate that this page was completed.
+                // We just save what we have and move on. 
+                // If the user didn't answer everything, the Security check on the next page load 
+                // will bounce them back to this page.
+                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1)));
             }
         }
     }
     
-    // Auto-save logic
-    if ($action === 'autosave' || $has_any_answer || $existing_response) {
-         if ($existing_response) {
-            $DB->update_record('block_chaside_responses', $data);
-        } else {
-            try {
-                $DB->insert_record('block_chaside_responses', $data);
-            } catch (dml_exception $e) {
-                 // Race condition check
-                $current_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
-                if ($current_record) {
-                    $data['id'] = $current_record->id;
-                    $DB->update_record('block_chaside_responses', $data);
-                } else {
-                    throw $e;
-                }
+    // -------------------------------------------------------------------------
+    // FINISH LOGIC
+    // -------------------------------------------------------------------------
+    if ($action === 'finish') {
+        // Collect entire dataset again to be 100% sure
+        // We use $data which already has DB merge + POST merge
+        
+        $completed = true;
+        $missing_questions = [];
+        
+        for ($i = 1; $i <= $total_questions; $i++) {
+             if (!isset($data->{"q{$i}"}) || $data->{"q{$i}"} === null) {
+                $completed = false;
+                $missing_questions[] = $i;
             }
         }
         
-        if ($action === 'autosave') {
-             header('Content-Type: application/json');
-             echo json_encode(['success' => true]);
-             exit;
-        }
-    }
-
-    // Process actions
-    switch ($action) {
-        case 'previous':
-            if ($page > 1) {
-                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page - 1)));
-            }
-            break;
+        if ($completed) {
+            // Prepare record for final save
+            $final_data = (array)$data; // convert back to array if calculate_scores needs it, or adjust
             
-        case 'next':
-            if ($page < $total_pages) {
-                if (!$current_page_complete) {
-                    $message = get_string('complete_current_page', 'block_chaside') . ' (' . count($missing_questions_current_page) . ' ' . get_string('questions_unanswered', 'block_chaside') . ')';
-                    redirect($PAGE->url, $message, null, \core\output\notification::NOTIFY_ERROR);
-                } else {
-                    redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1)));
-                }
-            }
-            break;
+            $scores = $facade->calculate_scores($final_data);
+            $final_data['score_c'] = $scores['C'];
+            $final_data['score_h'] = $scores['H'];
+            $final_data['score_a'] = $scores['A'];
+            $final_data['score_s'] = $scores['S'];
+            $final_data['score_i'] = $scores['I'];
+            $final_data['score_d'] = $scores['D'];
+            $final_data['score_e'] = $scores['E'];
+            $final_data['is_completed'] = 1;
+            $final_data['timemodified'] = time();
             
-        case 'finish':
-            // Verify if the ENTIRE test is complete (all questions)
-            $completed = true;
-            $missing_questions = [];
-            for ($i = 1; $i <= $total_questions; $i++) {
-                 if (!isset($data["q{$i}"]) || $data["q{$i}"] === null) {
-                    $completed = false;
-                     $missing_questions[] = $i;
-                }
-            }
-            
-            if ($completed) {
-                $scores = $facade->calculate_scores($data);
-                $data['score_c'] = $scores['C'];
-                $data['score_h'] = $scores['H'];
-                $data['score_a'] = $scores['A'];
-                $data['score_s'] = $scores['S'];
-                $data['score_i'] = $scores['I'];
-                $data['score_d'] = $scores['D'];
-                $data['score_e'] = $scores['E'];
-                $data['is_completed'] = 1;
-                $data['timemodified'] = time();
-                
-                $DB->update_record('block_chaside_responses', $data);
-                
-                redirect(new moodle_url('/course/view.php', array('id' => $courseid)), get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+            if ($existing_response) {
+                 $DB->update_record('block_chaside_responses', $final_data);
             } else {
-                 // Find first unanswered question and redirect to that page
-                $first_unanswered = $missing_questions[0];
-                $redirect_page = ceil($first_unanswered / $questions_per_page);
-                
-                $message = get_string('all_questions_must_be_answered', 'block_chaside') . ' (' . count($missing_questions) . ' ' . get_string('questions_remaining', 'block_chaside') . ')';
-                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $redirect_page)), $message, null, \core\output\notification::NOTIFY_ERROR);
+                // Should not happen usually on finish if pages were valid, but handled
+                 $DB->insert_record('block_chaside_responses', $final_data);
             }
             
-            break;
+            redirect(new moodle_url('/blocks/chaside/view_results.php', array('courseid' => $courseid)), get_string('test_completed_success', 'block_chaside'), null, \core\output\notification::NOTIFY_SUCCESS);
+        } else {
+             // Redirect to first missing
+            $first_unanswered = $missing_questions[0];
+            $redirect_page = ceil($first_unanswered / $questions_per_page);
+            
+            redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $redirect_page)));
+        }
     }
 }
 
@@ -286,7 +307,7 @@ echo $OUTPUT->header();
 // Prepare Mustache context
 $data = [
     'iconurl' => (new moodle_url('/blocks/chaside/pix/icon.svg'))->out(),
-    'title' => get_string('test_title', 'block_chaside'),
+    'title' => get_string('pluginname', 'block_chaside'),
     'description' => get_string('test_description', 'block_chaside'),
     'str_note' => get_string('note', 'block_chaside'),
     'str_all_questions_required' => get_string('all_questions_required', 'block_chaside'),

@@ -54,24 +54,3 @@
         </div>
     </form>
 </div>
-
-<script>
-// Safety net: Ensure values are submitted even if radio buttons are finicky with fast clicks
-document.addEventListener('DOMContentLoaded', function() {
-    var form = document.getElementById('chasideTestForm');
-    if (form) {
-        form.addEventListener('submit', function() {
-            var radios = form.querySelectorAll('input[type="radio"]:checked');
-            radios.forEach(function(radio) {
-                // Ensure there is a value sent for this
-                // We append a hidden input just in case the radio doesn't submit
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = radio.name;
-                input.value = radio.value;
-                form.appendChild(input);
-            });
-        });
-    }
-});
-</script>

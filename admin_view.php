@@ -33,7 +33,7 @@ if (!$DB->record_exists('block_instances', array('blockname' => 'chaside', 'pare
 }
 
 // Silent redirect
-if (!has_capability('block/chaside:viewreports', $context) && !is_siteadmin()) {
+if (!has_capability('block/chaside:viewreports', $context)) {
     redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
 }
 
@@ -51,11 +51,8 @@ if ($action === 'delete' && $userid && confirm_sesskey()) {
     $confirm = optional_param('confirm', 0, PARAM_INT);
     if ($confirm) {
         $targetuser = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
-        if (!is_siteadmin() && (
-            !is_enrolled($context, $targetuser, 'block/chaside:take_test', true)
-            || has_capability('block/chaside:viewreports', $context, $userid)
-            || is_siteadmin($userid)
-        )) {
+        if (!is_enrolled($context, $targetuser, 'block/chaside:take_test', true)
+            || has_capability('block/chaside:viewreports', $context, $userid)) {
             redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
         }
         $DB->delete_records('block_chaside_responses', array('userid' => $userid));

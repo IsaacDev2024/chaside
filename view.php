@@ -175,6 +175,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'autosave') {
         header('Content-Type: application/json');
         
+        // Optimize: If nothing changed from DB, don't write.
+        // But for safety against race conditions, we usually write.
+        // Let's just trust the write.
+
         if (empty($posted_responses) && !$existing_response) {
              echo json_encode(['success' => true, 'message' => 'No data to save']);
              exit;
@@ -182,9 +186,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         try {
             if ($existing_response) {
+                // To avoid "century" update, maybe check if update is needed?
+                // But Moodle update_record is fast.
                 $DB->update_record('block_chaside_responses', $data);
             } else {
-                // Double check race condition again
+                // ... logic ...
+
                 $race_check = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
                 if ($race_check) {
                     $data->id = $race_check->id;
@@ -230,27 +237,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // ACTION: NEXT
             if ($page < $total_pages) {
-                // Now verify completeness effectively using the $data object we just prepared/saved
-                // This checks "Did we just save answers for all questions on this page?"
-                $page_complete = true;
-                
-                // Recalculate range in case something weird happened, though standard is OK
-                $check_start = ($page - 1) * $questions_per_page + 1;
-                $check_end = min($page * $questions_per_page, $total_questions);
-                
-                for ($i = $check_start; $i <= $check_end; $i++) {
-                    if (!isset($data->{"q{$i}"}) || $data->{"q{$i}"} === null) {
-                        $page_complete = false; 
-                        break;
-                    } 
-                }
-
-                if (!$page_complete) {
-                    // Redirect to current page with error (or without if we removed messages)
-                    redirect($PAGE->url); 
-                } else {
-                     redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1)));
-                }
+                // We rely on the top-of-page Security check to validate that this page was completed.
+                // We just save what we have and move on. 
+                // If the user didn't answer everything, the Security check on the next page load 
+                // will bounce them back to this page.
+                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1)));
             }
         }
     }

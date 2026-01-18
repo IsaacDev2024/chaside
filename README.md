@@ -39,7 +39,7 @@ Este repositorio incluye:
   - Posibilidad de **eliminación** de resultados individuales.
   - **Agregados por área** (promedios/distribuciones) basados en estudiantes matriculados.
   - **Exportación** de resultados completados del curso en **CSV** o **JSON**.
-- Opción para **mostrar/ocultar** las descripciones en el bloque principal.
+- Opción para **mostrar/ocultar** las descripciones en el bloque principal **(oculto por defecto)**.
 - **Controles de privacidad**: acceso restringido por capacidades y por matrícula en el curso.
 ---
 

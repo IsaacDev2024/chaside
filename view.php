@@ -243,8 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'next':
             if ($page < $total_pages) {
                 if (!$current_page_complete) {
-                    $message = get_string('complete_current_page', 'block_chaside') . ' (' . count($missing_questions_current_page) . ' ' . get_string('questions_unanswered', 'block_chaside') . ')';
-                    redirect($PAGE->url, $message, null, \core\output\notification::NOTIFY_ERROR);
+                    redirect($PAGE->url);
                 } else {
                     redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $page + 1)));
                 }
@@ -282,8 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $first_unanswered = $missing_questions[0];
                 $redirect_page = ceil($first_unanswered / $questions_per_page);
                 
-                $message = get_string('all_questions_must_be_answered', 'block_chaside') . ' (' . count($missing_questions) . ' ' . get_string('questions_remaining', 'block_chaside') . ')';
-                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $redirect_page)), $message, null, \core\output\notification::NOTIFY_ERROR);
+                redirect(new moodle_url('/blocks/chaside/view.php', array('courseid' => $courseid, 'page' => $redirect_page)));
             }
             
             break;

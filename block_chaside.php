@@ -228,46 +228,26 @@ class block_chaside extends block_base {
         $txt_int_high = get_string('gap_interest_higher', 'block_chaside');
         $txt_apt_high = get_string('gap_aptitude_higher', 'block_chaside');
 
-        if (!empty($results['resumen_ejecutivo']['top1'])) {
-            $area_code = $results['resumen_ejecutivo']['top1']['area'];
-            $data['top1'] = $results['resumen_ejecutivo']['top1'];
-            $data['top1']['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
-            
-            if (isset($data['top1']['gap_type']) && $data['top1']['gap_type'] === 'gap_balanced') {
-                $data['top1']['gap_alert'] = get_string('gap_balanced', 'block_chaside');
-                $data['top1']['gap_icon'] = 'fa-balance-scale';
-            } elseif (isset($alert_map[$area_code])) {
-                $gap_msg = $alert_map[$area_code];
-                $data['top1']['gap_alert'] = $gap_msg;
-                // Determine icon
-                if ($gap_msg === $txt_int_high) {
-                    $data['top1']['gap_icon'] = 'fa-heart';
-                } elseif ($gap_msg === $txt_apt_high) {
-                    $data['top1']['gap_icon'] = 'fa-graduation-cap';
-                } else {
-                    $data['top1']['gap_icon'] = 'fa-balance-scale';
-                }
-            }
-        }
-
-        if (!empty($results['resumen_ejecutivo']['top2'])) {
-            $area_code = $results['resumen_ejecutivo']['top2']['area'];
-            $data['top2'] = $results['resumen_ejecutivo']['top2'];
-            $data['top2']['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
-            
-            if (isset($data['top2']['gap_type']) && $data['top2']['gap_type'] === 'gap_balanced') {
-                 $data['top2']['gap_alert'] = get_string('gap_balanced', 'block_chaside');
-                 $data['top2']['gap_icon'] = 'fa-balance-scale';
-            } elseif (isset($alert_map[$area_code])) {
-                $gap_msg = $alert_map[$area_code];
-                $data['top2']['gap_alert'] = $gap_msg;
-                // Determine icon
-                if ($gap_msg === $txt_int_high) {
-                    $data['top2']['gap_icon'] = 'fa-heart';
-                } elseif ($gap_msg === $txt_apt_high) {
-                    $data['top2']['gap_icon'] = 'fa-graduation-cap';
-                } else {
-                    $data['top2']['gap_icon'] = 'fa-balance-scale';
+        foreach (['top1', 'top2'] as $key) {
+            if (!empty($results['resumen_ejecutivo'][$key])) {
+                $area_code = $results['resumen_ejecutivo'][$key]['area'];
+                $data[$key] = $results['resumen_ejecutivo'][$key];
+                $data[$key]['area_icon'] = $area_icons[$area_code] ?? 'fa-star';
+                
+                if (isset($data[$key]['gap_type']) && $data[$key]['gap_type'] === 'gap_balanced') {
+                    $data[$key]['gap_alert'] = get_string('gap_balanced', 'block_chaside');
+                    $data[$key]['gap_icon'] = 'fa-balance-scale';
+                } elseif (isset($alert_map[$area_code])) {
+                    $gap_msg = $alert_map[$area_code];
+                    $data[$key]['gap_alert'] = $gap_msg;
+                    // Determine icon
+                    if ($gap_msg === $txt_int_high) {
+                        $data[$key]['gap_icon'] = 'fa-heart';
+                    } elseif ($gap_msg === $txt_apt_high) {
+                        $data[$key]['gap_icon'] = 'fa-graduation-cap';
+                    } else {
+                        $data[$key]['gap_icon'] = 'fa-balance-scale';
+                    }
                 }
             }
         }

@@ -5,7 +5,7 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] — 2026-01-16
+## [2.0.2] — 2026-01-18
 
 ### Agregado
 - Opción para mostrar/ocultar las descripciones en el bloque principal.
@@ -17,6 +17,7 @@ y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Corregido
 - Redirección tras completar el test: ahora redirige a la página de resultados detallados en lugar de al curso principal.
+- Gestión de condiciones de carrera (*race conditions*) en el formulario: se implementó una verificación de registros recientes para garantizar la integridad de los datos al validar preguntas.
 
 ## [2.0.1] — 2026-01-08
 

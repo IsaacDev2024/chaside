@@ -177,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verify that all questions on the current page are answered (for navigation purposes only)
     $current_page_complete = true;
     $missing_questions_current_page = array();
+    $fresh_record = null; // To handle race conditions
     
     for ($i = $start_question; $i <= $end_question; $i++) {
         $response = optional_param("q{$i}", null, PARAM_INT);
@@ -184,9 +185,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data["q{$i}"] = $response;
         } else {
             // Check if there is already a previous answer to this question.
-            if (!$existing_response || !isset($existing_response->{"q{$i}"}) || $existing_response->{"q{$i}"} === null) {
-                $current_page_complete = false;
-                $missing_questions_current_page[] = $i;
+            $has_existing = ($existing_response && isset($existing_response->{"q{$i}"}) && $existing_response->{"q{$i}"} !== null);
+            
+            if (!$has_existing) {
+                // RACE CONDITION CHECK:
+                // If the user answered very fast, autosave might have saved it to DB 
+                // but our $existing_response (loaded at start) is stale.
+                // Reload from DB just to be sure.
+                if ($fresh_record === null) {
+                    $fresh_record = $DB->get_record('block_chaside_responses', array('userid' => $USER->id));
+                }
+                
+                if ($fresh_record && isset($fresh_record->{"q{$i}"}) && $fresh_record->{"q{$i}"} !== null) {
+                    $data["q{$i}"] = $fresh_record->{"q{$i}"}; // Update data with fresh value
+                } else {
+                    $current_page_complete = false;
+                    $missing_questions_current_page[] = $i;
+                }
             }
         }
     }

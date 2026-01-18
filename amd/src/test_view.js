@@ -99,6 +99,12 @@ define(['jquery', 'core/ajax', 'core/str', 'core/notification'], function($, aja
 
             // Form submit validation
             this.form.addEventListener('submit', function(e) {
+                // CANCEL ANY PENDING AUTOSAVE
+                if (self.autoSaveTimer) {
+                    clearTimeout(self.autoSaveTimer);
+                    self.autoSaveTimer = null;
+                }
+
                 var submitter = e.submitter;
                 var action = submitter ? submitter.value : 'save';
 

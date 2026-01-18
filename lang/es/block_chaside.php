@@ -233,7 +233,7 @@ $string['email'] = 'Correo Electrónico';
 // Student interface strings
 $string['discover_your_interests'] = 'Descubre tus intereses y habilidades profesionales';
 $string['what_is_chaside'] = '¿En qué consiste esta exploración?';
-$string['chaside_description'] = 'Este modelo conecta tus intereses y aptitudes naturales con siete grandes áreas ocupacionales. La evaluación explora tu perfil para ofrecerte un panorama vocacional claro, ayudándote a tomar decisiones de carrera seguras que se alineen verdaderamente con tus talentos y pasiones a futuro.';
+$string['chaside_description'] = 'Conecta tus intereses y aptitudes naturales con siete grandes áreas ocupacionales. La evaluación explora tu perfil para ofrecerte un panorama vocacional claro, ayudándote a tomar decisiones de carrera seguras que se alineen verdaderamente con tus talentos y pasiones a futuro.';
 $string['feature_98_questions'] = '98 Preguntas Estratégicas';
 $string['feature_7_areas'] = '7 Áreas Vocacionales';
 $string['feature_instant_results'] = 'Resultados Instantáneos y Detallados';

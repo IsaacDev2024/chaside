@@ -17,7 +17,8 @@ y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Corregido
 - Redirección tras completar el test: ahora redirige a la página de resultados detallados en lugar de al curso principal.
-- Gestión de condiciones de carrera (*race conditions*) en el formulario: se implementó una verificación de registros recientes para garantizar la integridad de los datos al validar preguntas.
+- Solución de problemas de concurrencia ("race condition") entre el autoguardado y la navegación rápida entre páginas.
+- Optimización de la lógica de guardado en `view.php` para priorizar los datos enviados por formulario (`POST`).
 
 ## [2.0.1] — 2026-01-08
 

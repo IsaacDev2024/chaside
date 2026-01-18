@@ -242,7 +242,7 @@ $string['email'] = 'Email';
 // Student interface strings
 $string['discover_your_interests'] = 'Discover your interests and professional skills';
 $string['what_is_chaside'] = 'What is this exploration about?';
-$string['chaside_description'] = 'This model connects your natural interests and aptitudes with seven major occupational areas. The assessment explores your profile to offer you a clear vocational overview, helping you make career decisions that truly align with your talents and passions for the future.';
+$string['chaside_description'] = 'Connects your natural interests and aptitudes with seven major occupational areas. The assessment explores your profile to offer you a clear vocational overview, helping you make career decisions that truly align with your talents and passions for the future.';
 $string['feature_98_questions'] = '98 Strategic Questions';
 $string['feature_7_areas'] = '7 Vocational Areas';
 $string['feature_instant_results'] = 'Instant and Detailed Results';

@@ -5,6 +5,11 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] — 2026-01-18
+
+### Corregido
+- Se eliminaron las comprobaciones redundantes de administrador (`is_siteadmin()`) en varias vistas clave, mejorando la detección correcta de roles locales (profesores vs estudiantes) y el sistema de permisos basado en capacidades.
+
 ## [2.0.2] — 2026-01-18
 
 ### Agregado

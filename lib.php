@@ -26,7 +26,7 @@ function block_chaside_get_completed_responses($courseid, $groupid = 0) {
     require_login($course, false);
     
     // Check permissions
-    if (!has_capability('block/chaside:viewreports', $context) && !has_capability('block/chaside:manage_responses', $context) && !is_siteadmin()) {
+    if (!has_capability('block/chaside:viewreports', $context) && !has_capability('block/chaside:manage_responses', $context)) {
         return false;
     }
     
@@ -65,9 +65,7 @@ function block_chaside_get_student_ids($context, $groupid = 0) {
     $student_ids = array();
     foreach ($enrolled_ids as $candidateid) {
         $candidateid = (int)$candidateid;
-        if (is_siteadmin($candidateid)) {
-            continue;
-        }
+        
         if (has_capability('block/chaside:viewreports', $context, $candidateid) || has_capability('block/chaside:manage_responses', $context, $candidateid)) {
             continue;
         }

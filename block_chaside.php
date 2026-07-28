@@ -48,10 +48,10 @@ class block_chaside extends block_base {
         }
         $data['showdescriptions'] = $showdescriptions;
 
-        // Check if user can manage responses (teacher/admin)
-        if (has_capability('block/chaside:manage_responses', $context)) {
-            $data['management'] = $this->get_management_summary_data($context);
-            $data['showmanagement'] = true;
+        // Las cifras y resultados solo están disponibles en el panel protegido.
+        if (has_capability('block/chaside:viewstudentdata', $context)) {
+            $this->content->text = $this->get_management_launcher();
+            return $this->content;
         } else if (has_capability('block/chaside:take_test', $context)) {
             // Student view: check if test is completed (in any course)
             $response = $DB->get_record('block_chaside_responses', array(
@@ -78,6 +78,18 @@ class block_chaside extends block_base {
         }
            
         return $this->content;
+    }
+
+    private function get_management_launcher() {
+        global $COURSE, $OUTPUT;
+
+        return $OUTPUT->render_from_template('block_chaside/admin_launcher', [
+            'icon_html' => '<img src="' . (new moodle_url('/blocks/chaside/pix/icon.svg'))->out(false) . '" alt="" style="width: 4.25rem; height: 4.25rem; display: block; margin: 0 auto;">',
+            'security_label' => get_string('sensitive_data', 'block_chaside'),
+            'title' => get_string('management_title', 'block_chaside'),
+            'admin_url' => (new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $COURSE->id]))->out(false),
+            'button_label' => get_string('open_admin_panel', 'block_chaside'),
+        ]);
     }
 
     private function get_management_summary_data($context) {

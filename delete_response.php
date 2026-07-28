@@ -19,7 +19,7 @@ $context = context_course::instance($course->id);
 $adminviewurl = new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid));
 
 require_login($course, false);
-require_capability('block/chaside:viewreports', $context);
+require_capability('block/chaside:deletestudentdata', $context);
 
 $response = $DB->get_record('block_chaside_responses', array('id' => $id), '*', MUST_EXIST);
 

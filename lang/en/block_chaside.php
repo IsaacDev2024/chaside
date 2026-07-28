@@ -1,12 +1,14 @@
 <?php
+$string['chaside:viewstudentdata'] = 'View sensitive student data';
+$string['chaside:deletestudentdata'] = 'Delete sensitive student data';
+$string['sensitive_data'] = 'Sensitive data';
+$string['open_admin_panel'] = 'Open administration panel';
 // Block name and settings
 $string['pluginname'] = 'Vocational Guidance Exploration';
 $string['chaside'] = 'CHASIDE';
 $string['chaside:addinstance'] = 'Add a new CHASIDE block';
 $string['chaside:myaddinstance'] = 'Add a new CHASIDE block to My Page';
 $string['chaside:take_test'] = 'Take the CHASIDE test';
-$string['chaside:viewreports'] = 'View CHASIDE test reports';
-$string['chaside:manage_responses'] = 'Manage CHASIDE test responses';
 
 // Configuration
 $string['config_showdescriptions'] = 'Show descriptions';

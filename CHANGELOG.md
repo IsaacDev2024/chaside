@@ -5,6 +5,17 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] — 2026-07-28
+
+### Cambiado
+- El bloque reemplaza la vista de métricas en el curso por un lanzador compacto y consistente hacia el panel administrativo.
+- Se actualizaron las vistas de administración, resultados, botones y textos bilingües para el nuevo flujo de exploración.
+
+### Seguridad
+- Se añadieron las capacidades `viewstudentdata` y `deletestudentdata` para controlar de manera independiente la consulta/exportación y el borrado de respuestas.
+- Los roles docentes no reciben acceso automático a datos sensibles.
+- Se eliminaron las capacidades heredadas e inactivas `viewreports` y `manage_responses`.
+
 ## [2.0.3] — 2026-01-18
 
 ### Corregido

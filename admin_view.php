@@ -33,7 +33,7 @@ if (!$DB->record_exists('block_instances', array('blockname' => 'chaside', 'pare
 }
 
 // Silent redirect
-if (!has_capability('block/chaside:viewreports', $context)) {
+if (!has_capability('block/chaside:viewstudentdata', $context)) {
     redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
 }
 
@@ -47,12 +47,16 @@ $admin_url = new moodle_url('/blocks/chaside/admin_view.php', array('courseid' =
 $PAGE->set_url($admin_url);
 
 // Process actions
+if ($action === 'delete' && $userid && !has_capability('block/chaside:deletestudentdata', $context)) {
+    redirect($admin_url);
+}
+
 if ($action === 'delete' && $userid && confirm_sesskey()) {
     $confirm = optional_param('confirm', 0, PARAM_INT);
     if ($confirm) {
         $targetuser = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
         if (!is_enrolled($context, $targetuser, 'block/chaside:take_test', true)
-            || has_capability('block/chaside:viewreports', $context, $userid)) {
+            || has_capability('block/chaside:viewstudentdata', $context, $userid)) {
             redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
         }
         $DB->delete_records('block_chaside_responses', array('userid' => $userid));
@@ -61,7 +65,7 @@ if ($action === 'delete' && $userid && confirm_sesskey()) {
 }
 
 $title = get_string('admin_dashboard', 'block_chaside');
-$PAGE->set_pagelayout('standard');
+$PAGE->set_pagelayout('incourse');
 $PAGE->set_title($title . " : " . $course->fullname);
 $PAGE->set_heading($title . " : " . $course->fullname);
 $PAGE->requires->css(new moodle_url('/blocks/chaside/styles.css'));
@@ -76,7 +80,8 @@ $data = [
     'admin_url' => $admin_url->out(false),
     'export_url' => (new moodle_url('/blocks/chaside/export.php', ['courseid' => $courseid, 'format' => 'csv']))->out(false),
     'course_url' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
-    'search_term' => $search
+    'search_term' => $search,
+    'can_delete' => has_capability('block/chaside:deletestudentdata', $context),
 ];
 
 // Handle delete confirmation view
@@ -242,6 +247,7 @@ if ($participants) {
             'is_completed' => ($p->is_completed == 1),
             'date_completed' => userdate($p->timemodified, get_string('strftimedatetimeshort')),
             'view_url' => (new moodle_url('/blocks/chaside/view_results.php', ['userid' => $p->userid, 'courseid' => $courseid]))->out(false),
+            'can_delete' => has_capability('block/chaside:deletestudentdata', $context),
             'delete_url' => (new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $courseid, 'action' => 'delete', 'userid' => $p->userid, 'sesskey' => sesskey()]))->out(false)
         ];
 

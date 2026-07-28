@@ -1,12 +1,14 @@
 <?php
+$string['chaside:viewstudentdata'] = 'Ver datos sensibles de estudiantes';
+$string['chaside:deletestudentdata'] = 'Eliminar datos sensibles de estudiantes';
+$string['sensitive_data'] = 'Datos sensibles';
+$string['open_admin_panel'] = 'Abrir panel de administración';
 // Block name and settings
 $string['pluginname'] = 'Exploración de Orientación Vocacional';
 $string['chaside'] = 'CHASIDE';
 $string['chaside:addinstance'] = 'Añadir un nuevo bloque CHASIDE';
 $string['chaside:myaddinstance'] = 'Añadir un nuevo bloque CHASIDE a Mi Página';
 $string['chaside:take_test'] = 'Realizar el test CHASIDE';
-$string['chaside:viewreports'] = 'Ver reportes del test CHASIDE';
-$string['chaside:manage'] = 'Gestionar el test CHASIDE';
 
 // Configuración
 $string['config_showdescriptions'] = 'Mostrar descripciones';

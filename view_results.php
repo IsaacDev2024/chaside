@@ -27,7 +27,7 @@ if (!$DB->record_exists('block_instances', array('blockname' => 'chaside', 'pare
 }
 
 // Verificar permisos (redirreción silenciosa como learning_style/personality_test)
-if ($userid != $USER->id && !has_capability('block/chaside:viewreports', $context)) {
+if ($userid != $USER->id && !has_capability('block/chaside:viewstudentdata', $context)) {
     redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
 }
 
@@ -73,7 +73,7 @@ $template_data = [
     'iconurl' => $OUTPUT->image_url('icon', 'block_chaside')->out(false),
     'course_url' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
     'admin_url' => (new moodle_url('/blocks/chaside/admin_view.php', ['courseid' => $courseid]))->out(false),
-    'can_view_reports' => has_capability('block/chaside:viewreports', $context),
+    'can_view_reports' => has_capability('block/chaside:viewstudentdata', $context),
     'str_back_to_course' => get_string('back_to_course', 'block_chaside'),
     'str_back_to_admin' => get_string('back_to_admin', 'block_chaside'),
 ];

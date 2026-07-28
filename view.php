@@ -29,7 +29,7 @@ if (!$DB->record_exists('block_instances', array('blockname' => 'chaside', 'pare
 }
 
 // Redirect teachers/admins to admin page
-if (has_capability('block/chaside:manage_responses', $context)) {
+if (has_capability('block/chaside:viewstudentdata', $context)) {
     $manage_url = new moodle_url('/blocks/chaside/admin_view.php', array('courseid' => $courseid));
     redirect($manage_url, get_string('teachers_redirect_message', 'block_chaside'));
 }

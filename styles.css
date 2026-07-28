@@ -72,13 +72,15 @@
 }
 
 .block_chaside .chaside-invitation-block .chaside-actions .btn-primary {
-    background-color: #ffb600 !important;
+    background: linear-gradient(135deg, #ffb600 0%, #e6a300 100%) !important;
     border-color: #ffb600 !important;
+    color: #fff !important;
 }
 
 .block_chaside .chaside-invitation-block .chaside-actions .btn-primary:hover {
-    background-color: #e6a300 !important;
+    background: linear-gradient(135deg, #e6a300 0%, #cc9100 100%) !important;
     border-color: #cc9100 !important;
+    color: #fff !important;
 }
 
 .block_chaside .chaside-invitation-block .chaside-actions .btn:hover {

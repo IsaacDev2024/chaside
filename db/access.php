@@ -39,23 +39,16 @@ $capabilities = array(
         )
     ),
 
-    'block/chaside:viewreports' => array(
+    // Datos de orientación vocacional: solo roles autorizados expresamente.
+    'block/chaside:viewstudentdata' => array(
+        'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
-        'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
-            'teacher' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
+        'contextlevel' => CONTEXT_COURSE
     ),
 
-    'block/chaside:manage_responses' => array(
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_COURSE,
-        'archetypes' => array(
-            'teacher' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW
-        )
+    'block/chaside:deletestudentdata' => array(
+        'riskbitmask' => RISK_DATALOSS | RISK_PERSONAL,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE
     )
 );
